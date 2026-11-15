@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-512.png">
 <meta name="apple-mobile-web-app-title" content="節約貯金">
-<title>節約貯金 v0.5</title>
+<title>節約貯金 v0.6</title>
 <style>
 *{box-sizing:border-box;touch-action:manipulation}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f6f7f4;color:#1c2a22}
 header{padding:20px 16px 8px}h1{margin:0;font-size:22px} .sub{color:#5b6b60;font-size:13px;margin-top:4px}
@@ -48,12 +48,14 @@ label{font-size:13px;color:#5b6b60;display:block;margin:10px 0 6px}
 body[data-theme="blue"]{--main:#1565c0;--accent:#42a5f5}
 body[data-theme="purple"]{--main:#6a3ec9;--accent:#9b72f0}
 body[data-theme="orange"]{--main:#c2570f;--accent:#f08c2e}
-#tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;background:#fff;border-top:1px solid #e2e7e0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));z-index:50}
-#tabbar button{flex:1;background:#eef1ee;color:#445;font-size:15px;padding:12px}
-#tabbar button.on{background:#e6f4ec;color:var(--main)}
-#tabbar button#tabAdd{flex:1.2;background:var(--main);color:#fff;font-size:17px}
+#tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid #e6e8e3;box-shadow:0 -2px 14px rgba(30,50,35,.05);padding:6px 10px calc(6px + env(safe-area-inset-bottom));z-index:50}
+#tabbar button{flex:1;background:none;border:none;box-shadow:none;display:flex;flex-direction:column;align-items:center;gap:2px;color:#9aa39c;font-size:10px;font-weight:500;padding:5px 0 2px;border-radius:0}
+#tabbar button.on{background:none;color:var(--main);font-weight:700}
+#tabbar button .tic{display:block;line-height:0}
+#tabbar button .tic svg{width:24px;height:24px;display:block}
 body{padding-bottom:96px}
 #barPct{font-size:13px;font-weight:800;margin-top:6px;text-align:right}
+#donutArc{transform-box:fill-box;transform-origin:center;transform:rotate(-90deg)}
 .setrow{margin-top:14px}.setlabel{font-size:13px;color:#5b6b60;margin-bottom:6px}
 .optchips{display:flex;gap:8px;flex-wrap:wrap}
 .optchip{padding:9px 13px;font-size:14px;background:#fff;color:#33463a;border:1px solid #cfd8cf;border-radius:99px;font-weight:600}
@@ -62,7 +64,7 @@ small{color:#667}
 </style>
 </head>
 <body>
-<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.5）</div></header>
+<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.6）</div></header>
 <div id="storageBanner">⚠️ 保存できません。この画面を閉じると記録が消えます（Safariで開き直してください）</div>
 <div id="msg" class="msg"></div>
 
@@ -76,7 +78,7 @@ small{color:#667}
   <div id="donutWrap" style="display:none;text-align:center;padding-top:4px">
     <svg width="136" height="136" viewBox="0 0 120 120" role="img" aria-label="貯金度メーター">
       <circle cx="60" cy="60" r="52" fill="none" stroke="#e8ece8" stroke-width="12"></circle>
-      <circle id="donutArc" cx="60" cy="60" r="52" fill="none" stroke="#22a35a" stroke-width="12" stroke-linecap="round" transform="rotate(-90 60 60)"></circle>
+      <circle id="donutArc" cx="60" cy="60" r="52" fill="none" stroke="#22a35a" stroke-width="12" stroke-linecap="round"></circle>
       <text id="donutPct" x="60" y="59" text-anchor="middle" font-size="21" font-weight="800" fill="#1c2a22">0%</text>
       <text id="donutSub" x="60" y="77" text-anchor="middle" font-size="9.5" fill="#667">目標まで</text>
     </svg>
@@ -133,8 +135,8 @@ small{color:#667}
   <textarea id="importBox" rows="3" placeholder='{"goal":10000,"items":[...]}'></textarea>
   <button id="importBtn" class="ghost" type="button" style="width:100%;margin-top:8px">読み込む</button>
 </section>
-<nav id="tabbar"><button type="button" id="tabHome">🏠 ホーム</button><button type="button" id="tabAdd">＋ 追加</button><button type="button" id="tabSettings">⚙ 設定</button></nav>
-<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.5 ・ アプリ更新日：2026-11-16</p>
+<nav id="tabbar"><button type="button" id="tabHome"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></span><span>ホーム</span></button><button type="button" id="tabAdd"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></span><span>追加</span></button><button type="button" id="tabSettings"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7.5h8M18 7.5h2M4 16.5h2M12 16.5h8"/><circle cx="15" cy="7.5" r="2.1"/><circle cx="9" cy="16.5" r="2.1"/></svg></span><span>設定</span></button></nav>
+<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.6 ・ アプリ更新日：2026-11-16</p>
 
 <script>
 const KEY='setsuyaku_chokin_v1';
@@ -159,7 +161,7 @@ function render(){
   const rawPct=goal>0?total/goal*100:0; const pct=Math.max(0,Math.min(100,rawPct)); const signedPct=Math.trunc(rawPct);
   const bf=document.getElementById('barFill'); bf.style.width=Math.min(100,Math.abs(rawPct))+'%'; bf.style.background=total<0?'#e05252':'';
   const bp=document.getElementById('barPct'); bp.textContent=goal>0?((signedPct>0?'+':'')+signedPct+'%'):''; bp.style.color=total<0?'#c0392b':'var(--main)';
-  const CIRC=326.73; const arc=document.getElementById('donutArc'); arc.style.strokeDasharray=CIRC; arc.style.strokeDashoffset=CIRC*(1-Math.min(100,Math.abs(rawPct))/100); arc.style.stroke=total<0?'#e05252':'var(--accent)';
+  const CIRC=326.73; const arc=document.getElementById('donutArc'); arc.style.strokeDasharray=CIRC; arc.style.strokeDashoffset=CIRC*(1-Math.min(100,Math.abs(rawPct))/100); arc.style.stroke=total<0?'#e05252':'var(--accent)'; arc.style.transform=total<0?'scaleX(-1) rotate(-90deg)':'rotate(-90deg)';
   const dp=document.getElementById('donutPct'); dp.textContent=goal>0?((signedPct>0?'+':'')+signedPct+'%'):'—'; dp.style.fill=total<0?'#c0392b':'#1c2a22';
   document.getElementById('donutSub').textContent=goal<=0?'目標未設定':(total>=goal?'目標達成！':'あと '+yen(Math.max(0,goal-total)));
   applyMeter();
@@ -229,7 +231,7 @@ function buildSettings(){const tc=document.getElementById('themeChips'); tc.inne
  const ac=document.getElementById('afterChips'); ac.innerHTML=''; [['stay','そのまま（続けて入力）'],['home','ホームへ戻る']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.afterAdd||'stay')===k?' on':''); b.textContent=label; b.onclick=()=>{state.afterAdd=k; storageSave(); buildSettings();}; ac.appendChild(b);});
  const dc=document.getElementById('dispChips'); dc.innerHTML=''; [['showMsg','一言メッセージ'],['showStats','今日・今月などの内訳']].forEach(([k,label])=>{const on=state[k]!==false; const b=document.createElement('button'); b.type='button'; b.className='optchip'+(on?' on':''); b.textContent=label+(on?'：ON':'：OFF'); b.onclick=()=>{state[k]=state[k]===false?true:false; storageSave(); applySettings(); buildSettings();}; dc.appendChild(b);});}
 let currentView='home';
-function switchView(v){currentView=v; const cards=document.querySelectorAll('section.card'); const map={home:[0,2],add:[1],settings:[3,4]}; cards.forEach((c,i)=>{c.style.display=(map[v]||[]).includes(i)?'block':'none';}); document.getElementById('tabHome').className=v==='home'?'on':''; document.getElementById('tabSettings').className=v==='settings'?'on':''; window.scrollTo(0,0);}
+function switchView(v){currentView=v; const cards=document.querySelectorAll('section.card'); const map={home:[0,2],add:[1],settings:[3,4]}; cards.forEach((c,i)=>{c.style.display=(map[v]||[]).includes(i)?'block':'none';}); document.getElementById('tabHome').className=v==='home'?'on':''; document.getElementById('tabAdd').className=v==='add'?'on':''; document.getElementById('tabSettings').className=v==='settings'?'on':''; window.scrollTo(0,0);}
 document.getElementById('tabHome').onclick=()=>switchView('home');
 document.getElementById('tabAdd').onclick=()=>switchView('add');
 document.getElementById('tabSettings').onclick=()=>switchView('settings');
