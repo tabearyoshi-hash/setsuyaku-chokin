@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<meta name="apple-mobile-web-app-title" content="節約貯金">
+<title>節約貯金 v0.4</title>
+<style>
+*{box-sizing:border-box;touch-action:manipulation}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f6f7f4;color:#1c2a22}
+header{padding:20px 16px 8px}h1{margin:0;font-size:22px} .sub{color:#5b6b60;font-size:13px;margin-top:4px}
+.card{background:#fff;border:1px solid #e2e7e0;border-radius:16px;padding:16px;margin:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.balance{font-size:38px;font-weight:800;margin:6px 0} .balance.plus{color:var(--main)}.balance.minus{color:#c0392b}
+.bar{height:10px;background:#e8ece8;border-radius:99px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--accent);width:0%}
+.meterswitch{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
+.meterswitch button{padding:6px 12px;font-size:13px;background:#eef1ee;color:#445;border-radius:99px}
+.meterswitch button.on{background:var(--main);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+button{border:0;border-radius:12px;padding:12px;font-size:16px;font-weight:700;cursor:pointer}
+.seg{display:flex;background:#eef1ee;border-radius:12px;padding:4px}.seg button{flex:1;background:transparent;color:#445}.seg button.on-plus{background:#22a35a;color:#fff}.seg button.on-minus{background:#e05252;color:#fff}
+input,textarea{width:100%;padding:12px;border:1px solid #cfd8cf;border-radius:12px;font-size:17px;background:#fff}
+label{font-size:13px;color:#5b6b60;display:block;margin:10px 0 6px}
+.chip{flex:0 0 auto;padding:8px 12px;font-size:14px;background:#eef6f0;color:var(--main);border:1px solid #cfe6d6}
+.chip.neg{background:#fdf0f0;color:#b03a2e;border-color:#f0cccc}
+.primary{background:var(--main);color:#fff;width:100%;margin-top:12px}
+.ghost{background:#eef1ee;color:#223}
+.msg{margin:12px 16px;padding:10px 12px;border-radius:12px;font-size:14px;display:none}.msg.show{display:block}.msg.ok{background:#e6f6ec;color:#0f5a2e}.msg.warn{background:#fff3cd;color:#664d03}
+#storageBanner{display:none;margin:12px 16px;padding:10px 12px;border-radius:12px;background:#fdecec;color:#7a1f1f;font-size:14px}
+.item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #eef1ee}.item:last-child{border-bottom:0}
+.amt{font-weight:800;white-space:nowrap}.amt.p{color:var(--main)}.amt.m{color:#c0392b}
+.meta{font-size:12px;color:#778}.del{background:#f3f3f3;padding:6px 10px;font-size:13px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#f7faf7;border-radius:12px;padding:10px}.stat b{font-size:18px;display:block}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.pad button{padding:14px 8px;font-size:17px;background:#eef6f0;color:#0f7a3d;border:1px solid #cfe6d6}
+.pad button.sub{background:#fdf0f0;color:#b03a2e;border-color:#f0cccc}
+.pad button.clear{background:#eef1ee;color:#223;border-color:#dde3dd}
+#amount{font-size:22px;font-weight:700}#amount.pos{color:var(--main)}#amount.neg{color:#c0392b}
+#signHint{font-size:13px;margin-top:6px;min-height:18px}#signHint.pos{color:var(--main)}#signHint.neg{color:#c0392b}
+.catchips{display:flex;gap:8px;flex-wrap:wrap}
+.catchip{padding:9px 13px;font-size:14px;background:#fff;color:#33463a;border:1px solid #cfd8cf;border-radius:99px;font-weight:600}
+.catchip.on{background:var(--main);color:#fff;border-color:var(--main)}
+.memochip{flex:0 0 auto;padding:7px 11px;font-size:13px;background:#f4f6f4;color:#33463a;border:1px solid #e0e6e0}
+.datequick{display:flex;gap:8px;margin-top:8px}.datequick button{flex:1;padding:9px;font-size:14px}
+#undoBtn{display:none;width:100%;margin-top:8px;background:#fff3cd;color:#664d03}
+:root{--main:#0f7a3d;--accent:#22a35a}
+body[data-theme="blue"]{--main:#1565c0;--accent:#42a5f5}
+body[data-theme="purple"]{--main:#6a3ec9;--accent:#9b72f0}
+body[data-theme="orange"]{--main:#c2570f;--accent:#f08c2e}
+.setrow{margin-top:14px}.setlabel{font-size:13px;color:#5b6b60;margin-bottom:6px}
+.optchips{display:flex;gap:8px;flex-wrap:wrap}
+.optchip{padding:9px 13px;font-size:14px;background:#fff;color:#33463a;border:1px solid #cfd8cf;border-radius:99px;font-weight:600}
+.optchip.on{background:var(--main);color:#fff;border-color:var(--main)}
+small{color:#667}
+</style>
+</head>
+<body>
+<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.4）</div></header>
+<div id="storageBanner">⚠️ 保存できません。この画面を閉じると記録が消えます（Safariで開き直してください）</div>
+<div id="msg" class="msg"></div>
+
+<section class="card">
+  <div style="font-size:13px;color:#5b6b60">いまの節約貯金</div>
+  <div id="balance" class="balance plus">¥0</div>
+  <div id="stateMsg" style="font-size:14px;color:var(--main);margin:2px 0 6px"></div>
+  <div class="row" style="align-items:center"><div><label for="goalInput">目標（円）</label><input id="goalInput" inputmode="numeric" value="10000"></div><div style="flex:0 0 96px;padding-top:22px"><button id="goalSave" class="ghost">目標を保存</button></div></div>
+  <div class="meterswitch"><button type="button" id="meterDonutBtn">円グラフ</button><button type="button" id="meterBarBtn">バー</button></div>
+  <div id="barWrap"><div class="bar" style="margin-top:8px"><i id="barFill"></i></div></div>
+  <div id="donutWrap" style="display:none;text-align:center;padding-top:4px">
+    <svg width="136" height="136" viewBox="0 0 120 120" role="img" aria-label="貯金度メーター">
+      <circle cx="60" cy="60" r="52" fill="none" stroke="#e8ece8" stroke-width="12"></circle>
+      <circle id="donutArc" cx="60" cy="60" r="52" fill="none" stroke="#22a35a" stroke-width="12" stroke-linecap="round" transform="rotate(-90 60 60)"></circle>
+      <text id="donutPct" x="60" y="59" text-anchor="middle" font-size="21" font-weight="800" fill="#1c2a22">0%</text>
+      <text id="donutSub" x="60" y="77" text-anchor="middle" font-size="9.5" fill="#667">目標まで</text>
+    </svg>
+  </div>
+  <div id="goalText" style="font-size:13px;color:#5b6b60;margin-top:6px"></div>
+  <div class="stats" id="statsGrid" style="margin-top:14px">
+    <div class="stat">今日<b id="todayTotal">¥0</b></div>
+    <div class="stat">今月<b id="monthTotal">¥0</b></div>
+    <div class="stat">＋ 合計<b id="plusTotal">¥0</b></div>
+    <div class="stat">－ 合計<b id="minusTotal">¥0</b></div>
+  </div>
+</section>
+
+<section class="card">
+  <label for="amount">金額（円）</label>
+  <input id="amount" inputmode="numeric" placeholder="例：500（－500 と打つと贅沢・無駄遣い）" autocomplete="off">
+  <div id="signHint"></div>
+  <div class="pad" id="pad"></div>
+  <div style="font-size:12px;color:#778;margin-top:6px">電卓式：＋ボタンで貯金、−ボタンで贅沢・無駄遣い。押すたびに足し引きされます。＋/－の切り替えは不要です</div>
+  <label for="memo">メモ（任意）</label>
+  <input id="memo" placeholder="例：コンビニスイーツを我慢 / 外食で贅沢" autocomplete="off">
+  <div class="row" style="margin-top:8px;gap:6px" id="memoChips"></div>
+  <label>カテゴリ（任意）</label>
+  <div class="catchips" id="catChips"></div>
+  <div><label for="dateInput">日付</label><input id="dateInput" type="date">
+  <div class="datequick"><button type="button" id="dateToday" class="ghost">今日</button><button type="button" id="dateYday" class="ghost">昨日</button></div></div>
+  <div id="editNote" style="display:none;font-size:13px;color:#664d03;margin-top:10px">編集中です。内容を直して「更新する」を押してください。</div>
+  <button id="addBtn" class="primary" type="button">記録する</button>
+  <button id="undoBtn" type="button">↩ さっきの記録を取り消す</button>
+  <button id="cancelEdit" class="ghost" type="button" style="display:none;width:100%;margin-top:8px">編集をやめる</button>
+</section>
+
+<section class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center"><b>履歴</b><small id="count"></small></div>
+  <div id="list"></div>
+  <div id="empty" style="color:#778;padding:14px 0">まだ記録がありません。最初の「我慢できた」を入れてみてください。</div>
+</section>
+
+<section class="card">
+  <b>設定</b>
+  <div class="setrow"><div class="setlabel">テーマカラー</div><div class="optchips" id="themeChips"></div></div>
+  <div class="setrow"><div class="setlabel">金額パッドの金額</div><div class="optchips" id="padChips"></div></div>
+  <div class="setrow"><div class="setlabel">表示するもの（タップでON／OFF）</div><div class="optchips" id="dispChips"></div></div>
+  <p><small>設定はこの端末に保存されます。メーター（円グラフ／バー）の切り替えは、残高カードの右上にあります。</small></p>
+</section>
+
+<section class="card">
+  <b>あとで使う用</b>
+  <p><small>ウィジェット連携の下地です。今は合計をコピー／JSONで書き出せます。データ形式は今後 Scriptable 等に渡せる形に揃えていきます。</small></p>
+  <div class="row"><button id="copyBtn" class="ghost" type="button">合計をコピー</button><button id="exportBtn" class="ghost" type="button">JSON書き出し</button></div>
+  <label for="importBox">JSON読み込み（貼り付け）</label>
+  <textarea id="importBox" rows="3" placeholder='{"goal":10000,"items":[...]}'></textarea>
+  <button id="importBtn" class="ghost" type="button" style="width:100%;margin-top:8px">読み込む</button>
+</section>
+<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.4 ・ アプリ更新日：2026-11-16</p>
+
+<script>
+const KEY='setsuyaku_chokin_v1';
+let state={goal:10000,items:[]};
+let storageOK=true; let editingId=null; let selectedCategory=''; let lastAddedId=null;
+const CATEGORIES=['食費・飲み物','娯楽','交際費','交通費','文房具','その他'];
+function storageLoad(){try{const s=localStorage.getItem(KEY); if(s){const p=JSON.parse(s); if(p&&Array.isArray(p.items)) state=p;} storageOK=true;}catch(e){storageOK=false;} updateBanner();}
+function storageSave(){try{localStorage.setItem(KEY,JSON.stringify(state)); storageOK=true; updateBanner(); return true;}catch(e){storageOK=false; updateBanner(); return false;}}
+function updateBanner(){document.getElementById('storageBanner').style.display=storageOK?'none':'block';}
+function showMsg(t,ok){const m=document.getElementById('msg'); m.textContent=t; m.className='msg show '+(ok?'ok':'warn'); setTimeout(()=>{m.className='msg';},3500);}
+function yen(n){const s=n<0?'-':''; return s+'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP');}
+function parseAmount(v){if(!v) return NaN; const c=String(v).replace(/[，,円￥¥\s]/g,'').replace(/[－―]/g,'-').replace(/[０-９]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0)); const n=Number(c); return isNaN(n)?NaN:Math.round(n);}
+function dateToTs(ds){if(!ds) return Date.now(); const p=ds.split('-').map(Number); if(p.length!==3||p.some(isNaN)) return Date.now(); const now=new Date(); const isTodayStr=ds===toDateStr(now); if(isTodayStr) return Date.now(); return new Date(p[0],p[1]-1,p[2],12,0,0).getTime();}
+function toDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function summaryOf(){const now=new Date(); const isT=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();}; const isM=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}; return {total:state.items.reduce((a,i)=>a+i.amount,0), today:state.items.filter(i=>isT(i.ts)).reduce((a,i)=>a+i.amount,0), month:state.items.filter(i=>isM(i.ts)).reduce((a,i)=>a+i.amount,0), plus:state.items.filter(i=>i.amount>0).reduce((a,i)=>a+i.amount,0), minus:state.items.filter(i=>i.amount<0).reduce((a,i)=>a+i.amount,0), goal:Number(state.goal)||0};}
+function stateMessage(total,goal){if(goal>0&&total>=goal) return '目標達成！よく頑張りました！'; if(total<0) return '大丈夫、ここからがリスタートです！'; return '無理せずマイペースにいこう';}
+function fmtDate(ts){const d=new Date(ts); return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function render(){
+  const total=state.items.reduce((a,i)=>a+i.amount,0);
+  const b=document.getElementById('balance'); b.textContent=yen(total); b.className='balance '+(total<0?'minus':'plus');
+  const goal=Number(state.goal)||0; document.getElementById('goalInput').value=goal||'';
+  const pct=goal>0?Math.max(0,Math.min(100,total/goal*100)):0; document.getElementById('barFill').style.width=pct+'%';
+  const CIRC=326.73; const arc=document.getElementById('donutArc'); arc.style.strokeDasharray=CIRC; arc.style.strokeDashoffset=CIRC*(1-pct/100); arc.style.stroke=total<0?'#e05252':'var(--accent)';
+  document.getElementById('donutPct').textContent=goal>0?(Math.floor(pct)+'%'):'—';
+  document.getElementById('donutSub').textContent=goal<=0?'目標未設定':(total>=goal?'目標達成！':'あと '+yen(Math.max(0,goal-total)));
+  applyMeter();
+  document.getElementById('goalText').textContent=goal>0?('目標 '+yen(goal)+' まで あと '+yen(Math.max(0,goal-total))+'（'+Math.floor(pct)+'%）'):'目標を設定すると進み具合が出ます';
+  const now=new Date(); const isToday=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();};
+  const isMonth=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();};
+  document.getElementById('todayTotal').textContent=yen(state.items.filter(i=>isToday(i.ts)).reduce((a,i)=>a+i.amount,0));
+  document.getElementById('monthTotal').textContent=yen(state.items.filter(i=>isMonth(i.ts)).reduce((a,i)=>a+i.amount,0));
+  document.getElementById('plusTotal').textContent=yen(state.items.filter(i=>i.amount>0).reduce((a,i)=>a+i.amount,0));
+  document.getElementById('minusTotal').textContent=yen(Math.abs(state.items.filter(i=>i.amount<0).reduce((a,i)=>a+i.amount,0)));
+  document.getElementById('stateMsg').textContent=stateMessage(total,goal);
+  const list=document.getElementById('list'); list.innerHTML='';
+  const sorted=[...state.items].sort((a,b)=>b.ts-a.ts);
+  document.getElementById('empty').style.display=sorted.length?'none':'block';
+  document.getElementById('count').textContent=sorted.length?sorted.length+'件':'';
+  sorted.forEach(it=>{
+    const div=document.createElement('div'); div.className='item';
+    const left=document.createElement('div');
+    const title=document.createElement('div'); title.textContent=it.memo||(it.amount>=0?'節約・我慢':'贅沢・無駄遣い');
+    const meta=document.createElement('div'); meta.className='meta'; meta.textContent=fmtDate(it.ts)+(it.category?' ・ '+it.category:'');
+    left.appendChild(title); left.appendChild(meta);
+    const right=document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+    const amt=document.createElement('span'); amt.className='amt '+(it.amount>=0?'p':'m'); amt.textContent=(it.amount>=0?'+':'')+yen(it.amount).replace('-¥','-¥');
+    // yen already includes sign for negative; for positive add +
+    amt.textContent=it.amount>=0?('+'+yen(it.amount)):yen(it.amount);
+    const del=document.createElement('button'); del.className='del'; del.textContent='削除'; del.onclick=()=>{state.items=state.items.filter(x=>x.id!==it.id); if(editingId===it.id) cancelEdit(); const ok=storageSave(); render(); showMsg(ok?'削除しました':'削除しました（保存はできませんでした）',ok);};
+    const edit=document.createElement('button'); edit.className='del'; edit.textContent='編集'; edit.onclick=()=>{startEdit(it);};
+    right.appendChild(amt); right.appendChild(edit); right.appendChild(del); div.appendChild(left); div.appendChild(right); list.appendChild(div);
+  });
+  buildMemoChips();
+}
+function startEdit(it){editingId=it.id; document.getElementById('amount').value=(it.amount<0?'-':'')+Math.abs(it.amount).toLocaleString('ja-JP'); updateSignUI(); document.getElementById('memo').value=it.memo||''; selectedCategory=it.category||''; buildCatChips(); document.getElementById('dateInput').value=toDateStr(new Date(it.ts)); document.getElementById('editNote').style.display='block'; document.getElementById('cancelEdit').style.display='block'; document.getElementById('addBtn').textContent='更新する'; showMsg('編集中：内容を直して「更新する」を押してください',true);}
+function cancelEdit(){editingId=null; document.getElementById('editNote').style.display='none'; document.getElementById('cancelEdit').style.display='none'; document.getElementById('amount').value=''; document.getElementById('memo').value=''; selectedCategory=''; buildCatChips(); document.getElementById('dateInput').value=toDateStr(new Date()); updateSignUI();}
+function currentAmt(){const v=parseAmount(document.getElementById('amount').value); return isNaN(v)?0:v;}
+function setAmt(n){const el=document.getElementById('amount'); el.value=n===0?'':(n<0?'-':'')+Math.abs(n).toLocaleString('ja-JP'); updateSignUI();}
+function updateSignUI(){const n=currentAmt(); const el=document.getElementById('amount'); el.className=n<0?'neg':(n>0?'pos':''); const h=document.getElementById('signHint'); h.className=n<0?'neg':(n>0?'pos':''); h.textContent=n>0?'＋ 節約・我慢として記録されます':(n<0?'－ 贅沢・無駄遣いとして記録されます':'金額を入れると、＋か－かが自動で決まります'); const b=document.getElementById('addBtn'); if(editingId){b.style.background=n<0?'#c0392b':'var(--main)';} else {b.textContent=n<0?'－ で記録する（贅沢・無駄遣い）':'＋ で記録する（節約・我慢）'; b.style.background=n<0?'#c0392b':'var(--main)';}}
+function buildPad(){const c=document.getElementById('pad'); c.innerHTML=''; (state.padset==='large'?[100,500,1000,5000,10000,50000]:[10,50,100,500,1000,5000]).forEach(v=>{const b=document.createElement('button'); b.type='button'; b.textContent='+'+v.toLocaleString('ja-JP'); b.onclick=()=>{setAmt(currentAmt()+v);}; c.appendChild(b);}); (state.padset==='large'?[100,500,1000,5000]:[10,50,100,500]).forEach(v=>{const b=document.createElement('button'); b.type='button'; b.className='sub'; b.textContent='−'+v.toLocaleString('ja-JP'); b.onclick=()=>{setAmt(currentAmt()-v);}; c.appendChild(b);}); const cl=document.createElement('button'); cl.type='button'; cl.className='clear'; cl.textContent='クリア'; cl.onclick=()=>{setAmt(0);}; c.appendChild(cl); const bk=document.createElement('button'); bk.type='button'; bk.className='clear'; bk.textContent='1桁消す'; bk.onclick=()=>{setAmt(Math.trunc(currentAmt()/10));}; c.appendChild(bk);}
+function buildCatChips(){const c=document.getElementById('catChips'); c.innerHTML=''; [''].concat(CATEGORIES).forEach(v=>{const b=document.createElement('button'); b.type='button'; b.className='catchip'+(selectedCategory===v?' on':''); b.textContent=v||'未選択'; b.onclick=()=>{selectedCategory=v; buildCatChips();}; c.appendChild(b);});}
+function buildMemoChips(){const c=document.getElementById('memoChips'); if(!c) return; c.innerHTML=''; const seen=new Set(); const items=[...state.items].sort((a,b)=>b.ts-a.ts); for(const it of items){if(it.memo&&!seen.has(it.memo)){seen.add(it.memo); const b=document.createElement('button'); b.type='button'; b.className='memochip'; b.textContent=it.memo; b.onclick=()=>{document.getElementById('memo').value=it.memo; if(it.category){selectedCategory=it.category; buildCatChips();}}; c.appendChild(b); if(seen.size>=5) break;}}}
+document.getElementById('amount').addEventListener('input',()=>updateSignUI());
+document.getElementById('addBtn').onclick=()=>{
+  const raw=document.getElementById('amount').value; const v=parseAmount(raw);
+  if(!raw||isNaN(v)||v===0){showMsg('金額を入れてください（＋でも－でも、0以外）',false); return;}
+  const signed=v;
+  const memo=document.getElementById('memo').value.trim();
+  const category=selectedCategory;
+  const ts=dateToTs(document.getElementById('dateInput').value);
+  if(editingId){const it=state.items.find(x=>x.id===editingId); if(it){it.amount=signed; it.memo=memo; it.category=category; it.ts=ts;} const ok=storageSave(); cancelEdit(); render(); showMsg(ok?'更新しました':'更新しました（保存はできませんでした）',ok); return;}
+  const newId=Date.now()+'-'+Math.random().toString(16).slice(2);
+  state.items.push({id:newId, amount:signed, memo:memo, category:category, ts:ts});
+  const ok=storageSave(); render();
+  lastAddedId=newId; document.getElementById('undoBtn').style.display='block';
+  document.getElementById('amount').value=''; document.getElementById('memo').value=''; updateSignUI();
+  showMsg(ok?('記録しました： '+(signed>=0?'+':'')+yen(signed)):'記録しました（保存はできませんでした。閉じると消えます）',ok);
+};
+document.getElementById('cancelEdit').onclick=()=>{cancelEdit(); render();};
+document.getElementById('goalSave').onclick=()=>{const v=parseAmount(document.getElementById('goalInput').value); if(isNaN(v)||v<0){showMsg('目標は0以上の数字で入れてください',false); return;} state.goal=v; const ok=storageSave(); render(); showMsg(ok?'目標を保存しました':'目標を変更しました（保存はできませんでした）',ok);};
+document.getElementById('copyBtn').onclick=async()=>{const total=state.items.reduce((a,i)=>a+i.amount,0); const t='節約貯金 合計 '+yen(total)+'（目標 '+yen(Number(state.goal)||0)+'）'; try{await navigator.clipboard.writeText(t); showMsg('コピーしました：'+t,true);}catch(e){showMsg(t,true);}};
+document.getElementById('exportBtn').onclick=async()=>{const s=summaryOf(); const out={version:1, updatedAt:new Date().toISOString(), summary:{total:s.total,today:s.today,month:s.month,plus:s.plus,minus:s.minus,goal:s.goal}, goal:s.goal, items:state.items.map(i=>({id:i.id,date:toDateStr(new Date(i.ts)),ts:i.ts,amount:Math.round(i.amount),memo:i.memo||'',category:i.category||''}))}; const t=JSON.stringify(out,null,2); try{await navigator.clipboard.writeText(t); showMsg('JSONをコピーしました（ウィジェット用要約つき）',true);}catch(e){document.getElementById('importBox').value=t; showMsg('下の欄にJSONを表示しました',true);}};
+document.getElementById('importBtn').onclick=()=>{try{const p=JSON.parse(document.getElementById('importBox').value); if(!p||!Array.isArray(p.items)) throw 0; const items=p.items.filter(i=>i&&typeof i.amount==='number'&&isFinite(i.amount)).map(i=>{let ts=(typeof i.ts==='number'&&isFinite(i.ts)&&i.ts>0)?i.ts:(i.date?dateToTs(i.date):Date.now()); return {id:i.id||(ts+'-'+Math.random().toString(16).slice(2)), amount:Math.round(i.amount), memo:String(i.memo||''), category:String(i.category||''), ts:ts};}); state={goal:Number(p.goal)||(p.summary&&Number(p.summary.goal))||10000, items:items, meter:(p.meter==='bar'?'bar':'donut')}; const ok=storageSave(); render(); showMsg(ok?'読み込みました':'読み込みました（保存はできませんでした）',ok);}catch(e){showMsg('JSONの形が違います',false);}};
+const THEMES=[['green','みどり'],['blue','あお'],['purple','むらさき'],['orange','オレンジ']];
+function applySettings(){document.body.dataset.theme=state.theme||'green'; document.getElementById('stateMsg').style.display=state.showMsg===false?'none':'block'; document.getElementById('statsGrid').style.display=state.showStats===false?'none':'grid';}
+function buildSettings(){const tc=document.getElementById('themeChips'); tc.innerHTML=''; THEMES.forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.theme||'green')===k?' on':''); b.textContent=label; b.onclick=()=>{state.theme=k; storageSave(); applySettings(); buildSettings();}; tc.appendChild(b);});
+ const pc=document.getElementById('padChips'); pc.innerHTML=''; [['standard','標準（10〜5,000）'],['large','大きめ（100〜50,000）']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.padset||'standard')===k?' on':''); b.textContent=label; b.onclick=()=>{state.padset=k; storageSave(); buildPad(); buildSettings();}; pc.appendChild(b);});
+ const dc=document.getElementById('dispChips'); dc.innerHTML=''; [['showMsg','一言メッセージ'],['showStats','今日・今月などの内訳']].forEach(([k,label])=>{const on=state[k]!==false; const b=document.createElement('button'); b.type='button'; b.className='optchip'+(on?' on':''); b.textContent=label+(on?'：ON':'：OFF'); b.onclick=()=>{state[k]=state[k]===false?true:false; storageSave(); applySettings(); buildSettings();}; dc.appendChild(b);});}
+function applyMeter(){const m=state.meter==='bar'?'bar':'donut'; document.getElementById('barWrap').style.display=m==='bar'?'block':'none'; document.getElementById('donutWrap').style.display=m==='donut'?'block':'none'; document.getElementById('meterBarBtn').className=m==='bar'?'on':''; document.getElementById('meterDonutBtn').className=m==='donut'?'on':'';}
+document.getElementById('meterBarBtn').onclick=()=>{state.meter='bar'; storageSave(); applyMeter();};
+document.getElementById('meterDonutBtn').onclick=()=>{state.meter='donut'; storageSave(); applyMeter();};
+document.getElementById('undoBtn').onclick=()=>{if(!lastAddedId){document.getElementById('undoBtn').style.display='none'; return;} const before=state.items.length; state.items=state.items.filter(x=>x.id!==lastAddedId); lastAddedId=null; document.getElementById('undoBtn').style.display='none'; const ok=storageSave(); render(); showMsg(before!==state.items.length?(ok?'さっきの記録を取り消しました':'取り消しました（保存はできませんでした）'):'取り消す記録がありませんでした',ok);};
+document.getElementById('dateToday').onclick=()=>{document.getElementById('dateInput').value=toDateStr(new Date());};
+document.getElementById('dateYday').onclick=()=>{const d=new Date(); d.setDate(d.getDate()-1); document.getElementById('dateInput').value=toDateStr(d);};
+document.getElementById('memo').addEventListener('keydown',e=>{if(e.key==='Enter'){document.getElementById('addBtn').click();}});
+storageLoad(); document.getElementById('dateInput').value=toDateStr(new Date()); buildPad(); buildCatChips(); buildSettings(); applySettings(); updateSignUI(); render();
+// expose for local verification
+window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, currentAmt, updateSignUI, applyMeter, applySettings};
+</script>
+</body>
+</html>
