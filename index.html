@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-512.png">
 <meta name="apple-mobile-web-app-title" content="節約貯金">
-<title>節約貯金 v0.4</title>
+<title>節約貯金 v0.5</title>
 <style>
 *{box-sizing:border-box;touch-action:manipulation}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f6f7f4;color:#1c2a22}
 header{padding:20px 16px 8px}h1{margin:0;font-size:22px} .sub{color:#5b6b60;font-size:13px;margin-top:4px}
@@ -48,6 +48,12 @@ label{font-size:13px;color:#5b6b60;display:block;margin:10px 0 6px}
 body[data-theme="blue"]{--main:#1565c0;--accent:#42a5f5}
 body[data-theme="purple"]{--main:#6a3ec9;--accent:#9b72f0}
 body[data-theme="orange"]{--main:#c2570f;--accent:#f08c2e}
+#tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;background:#fff;border-top:1px solid #e2e7e0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));z-index:50}
+#tabbar button{flex:1;background:#eef1ee;color:#445;font-size:15px;padding:12px}
+#tabbar button.on{background:#e6f4ec;color:var(--main)}
+#tabbar button#tabAdd{flex:1.2;background:var(--main);color:#fff;font-size:17px}
+body{padding-bottom:96px}
+#barPct{font-size:13px;font-weight:800;margin-top:6px;text-align:right}
 .setrow{margin-top:14px}.setlabel{font-size:13px;color:#5b6b60;margin-bottom:6px}
 .optchips{display:flex;gap:8px;flex-wrap:wrap}
 .optchip{padding:9px 13px;font-size:14px;background:#fff;color:#33463a;border:1px solid #cfd8cf;border-radius:99px;font-weight:600}
@@ -56,7 +62,7 @@ small{color:#667}
 </style>
 </head>
 <body>
-<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.4）</div></header>
+<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.5）</div></header>
 <div id="storageBanner">⚠️ 保存できません。この画面を閉じると記録が消えます（Safariで開き直してください）</div>
 <div id="msg" class="msg"></div>
 
@@ -66,7 +72,7 @@ small{color:#667}
   <div id="stateMsg" style="font-size:14px;color:var(--main);margin:2px 0 6px"></div>
   <div class="row" style="align-items:center"><div><label for="goalInput">目標（円）</label><input id="goalInput" inputmode="numeric" value="10000"></div><div style="flex:0 0 96px;padding-top:22px"><button id="goalSave" class="ghost">目標を保存</button></div></div>
   <div class="meterswitch"><button type="button" id="meterDonutBtn">円グラフ</button><button type="button" id="meterBarBtn">バー</button></div>
-  <div id="barWrap"><div class="bar" style="margin-top:8px"><i id="barFill"></i></div></div>
+  <div id="barWrap"><div class="bar" style="margin-top:8px"><i id="barFill"></i></div><div id="barPct"></div></div>
   <div id="donutWrap" style="display:none;text-align:center;padding-top:4px">
     <svg width="136" height="136" viewBox="0 0 120 120" role="img" aria-label="貯金度メーター">
       <circle cx="60" cy="60" r="52" fill="none" stroke="#e8ece8" stroke-width="12"></circle>
@@ -114,6 +120,8 @@ small{color:#667}
   <div class="setrow"><div class="setlabel">テーマカラー</div><div class="optchips" id="themeChips"></div></div>
   <div class="setrow"><div class="setlabel">金額パッドの金額</div><div class="optchips" id="padChips"></div></div>
   <div class="setrow"><div class="setlabel">表示するもの（タップでON／OFF）</div><div class="optchips" id="dispChips"></div></div>
+  <div class="setrow"><div class="setlabel">起動時に開くタブ</div><div class="optchips" id="startChips"></div></div>
+  <div class="setrow"><div class="setlabel">記録したあと</div><div class="optchips" id="afterChips"></div></div>
   <p><small>設定はこの端末に保存されます。メーター（円グラフ／バー）の切り替えは、残高カードの右上にあります。</small></p>
 </section>
 
@@ -125,7 +133,8 @@ small{color:#667}
   <textarea id="importBox" rows="3" placeholder='{"goal":10000,"items":[...]}'></textarea>
   <button id="importBtn" class="ghost" type="button" style="width:100%;margin-top:8px">読み込む</button>
 </section>
-<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.4 ・ アプリ更新日：2026-11-16</p>
+<nav id="tabbar"><button type="button" id="tabHome">🏠 ホーム</button><button type="button" id="tabAdd">＋ 追加</button><button type="button" id="tabSettings">⚙ 設定</button></nav>
+<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.5 ・ アプリ更新日：2026-11-16</p>
 
 <script>
 const KEY='setsuyaku_chokin_v1';
@@ -147,12 +156,14 @@ function render(){
   const total=state.items.reduce((a,i)=>a+i.amount,0);
   const b=document.getElementById('balance'); b.textContent=yen(total); b.className='balance '+(total<0?'minus':'plus');
   const goal=Number(state.goal)||0; document.getElementById('goalInput').value=goal||'';
-  const pct=goal>0?Math.max(0,Math.min(100,total/goal*100)):0; document.getElementById('barFill').style.width=pct+'%';
-  const CIRC=326.73; const arc=document.getElementById('donutArc'); arc.style.strokeDasharray=CIRC; arc.style.strokeDashoffset=CIRC*(1-pct/100); arc.style.stroke=total<0?'#e05252':'var(--accent)';
-  document.getElementById('donutPct').textContent=goal>0?(Math.floor(pct)+'%'):'—';
+  const rawPct=goal>0?total/goal*100:0; const pct=Math.max(0,Math.min(100,rawPct)); const signedPct=Math.trunc(rawPct);
+  const bf=document.getElementById('barFill'); bf.style.width=Math.min(100,Math.abs(rawPct))+'%'; bf.style.background=total<0?'#e05252':'';
+  const bp=document.getElementById('barPct'); bp.textContent=goal>0?((signedPct>0?'+':'')+signedPct+'%'):''; bp.style.color=total<0?'#c0392b':'var(--main)';
+  const CIRC=326.73; const arc=document.getElementById('donutArc'); arc.style.strokeDasharray=CIRC; arc.style.strokeDashoffset=CIRC*(1-Math.min(100,Math.abs(rawPct))/100); arc.style.stroke=total<0?'#e05252':'var(--accent)';
+  const dp=document.getElementById('donutPct'); dp.textContent=goal>0?((signedPct>0?'+':'')+signedPct+'%'):'—'; dp.style.fill=total<0?'#c0392b':'#1c2a22';
   document.getElementById('donutSub').textContent=goal<=0?'目標未設定':(total>=goal?'目標達成！':'あと '+yen(Math.max(0,goal-total)));
   applyMeter();
-  document.getElementById('goalText').textContent=goal>0?('目標 '+yen(goal)+' まで あと '+yen(Math.max(0,goal-total))+'（'+Math.floor(pct)+'%）'):'目標を設定すると進み具合が出ます';
+  document.getElementById('goalText').textContent=goal>0?('目標 '+yen(goal)+' まで あと '+yen(Math.max(0,goal-total))+'（'+(signedPct>0?'+':'')+signedPct+'%）'):'目標を設定すると進み具合が出ます';
   const now=new Date(); const isToday=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();};
   const isMonth=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();};
   document.getElementById('todayTotal').textContent=yen(state.items.filter(i=>isToday(i.ts)).reduce((a,i)=>a+i.amount,0));
@@ -180,7 +191,7 @@ function render(){
   });
   buildMemoChips();
 }
-function startEdit(it){editingId=it.id; document.getElementById('amount').value=(it.amount<0?'-':'')+Math.abs(it.amount).toLocaleString('ja-JP'); updateSignUI(); document.getElementById('memo').value=it.memo||''; selectedCategory=it.category||''; buildCatChips(); document.getElementById('dateInput').value=toDateStr(new Date(it.ts)); document.getElementById('editNote').style.display='block'; document.getElementById('cancelEdit').style.display='block'; document.getElementById('addBtn').textContent='更新する'; showMsg('編集中：内容を直して「更新する」を押してください',true);}
+function startEdit(it){editingId=it.id; document.getElementById('amount').value=(it.amount<0?'-':'')+Math.abs(it.amount).toLocaleString('ja-JP'); updateSignUI(); document.getElementById('memo').value=it.memo||''; selectedCategory=it.category||''; buildCatChips(); document.getElementById('dateInput').value=toDateStr(new Date(it.ts)); document.getElementById('editNote').style.display='block'; document.getElementById('cancelEdit').style.display='block'; document.getElementById('addBtn').textContent='更新する'; switchView('add'); showMsg('編集中：内容を直して「更新する」を押してください',true);}
 function cancelEdit(){editingId=null; document.getElementById('editNote').style.display='none'; document.getElementById('cancelEdit').style.display='none'; document.getElementById('amount').value=''; document.getElementById('memo').value=''; selectedCategory=''; buildCatChips(); document.getElementById('dateInput').value=toDateStr(new Date()); updateSignUI();}
 function currentAmt(){const v=parseAmount(document.getElementById('amount').value); return isNaN(v)?0:v;}
 function setAmt(n){const el=document.getElementById('amount'); el.value=n===0?'':(n<0?'-':'')+Math.abs(n).toLocaleString('ja-JP'); updateSignUI();}
@@ -203,6 +214,7 @@ document.getElementById('addBtn').onclick=()=>{
   lastAddedId=newId; document.getElementById('undoBtn').style.display='block';
   document.getElementById('amount').value=''; document.getElementById('memo').value=''; updateSignUI();
   showMsg(ok?('記録しました： '+(signed>=0?'+':'')+yen(signed)):'記録しました（保存はできませんでした。閉じると消えます）',ok);
+  if(state.afterAdd==='home') switchView('home');
 };
 document.getElementById('cancelEdit').onclick=()=>{cancelEdit(); render();};
 document.getElementById('goalSave').onclick=()=>{const v=parseAmount(document.getElementById('goalInput').value); if(isNaN(v)||v<0){showMsg('目標は0以上の数字で入れてください',false); return;} state.goal=v; const ok=storageSave(); render(); showMsg(ok?'目標を保存しました':'目標を変更しました（保存はできませんでした）',ok);};
@@ -213,7 +225,14 @@ const THEMES=[['green','みどり'],['blue','あお'],['purple','むらさき'],
 function applySettings(){document.body.dataset.theme=state.theme||'green'; document.getElementById('stateMsg').style.display=state.showMsg===false?'none':'block'; document.getElementById('statsGrid').style.display=state.showStats===false?'none':'grid';}
 function buildSettings(){const tc=document.getElementById('themeChips'); tc.innerHTML=''; THEMES.forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.theme||'green')===k?' on':''); b.textContent=label; b.onclick=()=>{state.theme=k; storageSave(); applySettings(); buildSettings();}; tc.appendChild(b);});
  const pc=document.getElementById('padChips'); pc.innerHTML=''; [['standard','標準（10〜5,000）'],['large','大きめ（100〜50,000）']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.padset||'standard')===k?' on':''); b.textContent=label; b.onclick=()=>{state.padset=k; storageSave(); buildPad(); buildSettings();}; pc.appendChild(b);});
+ const sc=document.getElementById('startChips'); sc.innerHTML=''; [['home','ホーム'],['add','追加']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.startTab||'home')===k?' on':''); b.textContent=label; b.onclick=()=>{state.startTab=k; storageSave(); buildSettings();}; sc.appendChild(b);});
+ const ac=document.getElementById('afterChips'); ac.innerHTML=''; [['stay','そのまま（続けて入力）'],['home','ホームへ戻る']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.afterAdd||'stay')===k?' on':''); b.textContent=label; b.onclick=()=>{state.afterAdd=k; storageSave(); buildSettings();}; ac.appendChild(b);});
  const dc=document.getElementById('dispChips'); dc.innerHTML=''; [['showMsg','一言メッセージ'],['showStats','今日・今月などの内訳']].forEach(([k,label])=>{const on=state[k]!==false; const b=document.createElement('button'); b.type='button'; b.className='optchip'+(on?' on':''); b.textContent=label+(on?'：ON':'：OFF'); b.onclick=()=>{state[k]=state[k]===false?true:false; storageSave(); applySettings(); buildSettings();}; dc.appendChild(b);});}
+let currentView='home';
+function switchView(v){currentView=v; const cards=document.querySelectorAll('section.card'); const map={home:[0,2],add:[1],settings:[3,4]}; cards.forEach((c,i)=>{c.style.display=(map[v]||[]).includes(i)?'block':'none';}); document.getElementById('tabHome').className=v==='home'?'on':''; document.getElementById('tabSettings').className=v==='settings'?'on':''; window.scrollTo(0,0);}
+document.getElementById('tabHome').onclick=()=>switchView('home');
+document.getElementById('tabAdd').onclick=()=>switchView('add');
+document.getElementById('tabSettings').onclick=()=>switchView('settings');
 function applyMeter(){const m=state.meter==='bar'?'bar':'donut'; document.getElementById('barWrap').style.display=m==='bar'?'block':'none'; document.getElementById('donutWrap').style.display=m==='donut'?'block':'none'; document.getElementById('meterBarBtn').className=m==='bar'?'on':''; document.getElementById('meterDonutBtn').className=m==='donut'?'on':'';}
 document.getElementById('meterBarBtn').onclick=()=>{state.meter='bar'; storageSave(); applyMeter();};
 document.getElementById('meterDonutBtn').onclick=()=>{state.meter='donut'; storageSave(); applyMeter();};
@@ -221,9 +240,9 @@ document.getElementById('undoBtn').onclick=()=>{if(!lastAddedId){document.getEle
 document.getElementById('dateToday').onclick=()=>{document.getElementById('dateInput').value=toDateStr(new Date());};
 document.getElementById('dateYday').onclick=()=>{const d=new Date(); d.setDate(d.getDate()-1); document.getElementById('dateInput').value=toDateStr(d);};
 document.getElementById('memo').addEventListener('keydown',e=>{if(e.key==='Enter'){document.getElementById('addBtn').click();}});
-storageLoad(); document.getElementById('dateInput').value=toDateStr(new Date()); buildPad(); buildCatChips(); buildSettings(); applySettings(); updateSignUI(); render();
+storageLoad(); document.getElementById('dateInput').value=toDateStr(new Date()); buildPad(); buildCatChips(); buildSettings(); applySettings(); updateSignUI(); render(); switchView(state.startTab==='add'?'add':'home');
 // expose for local verification
-window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, currentAmt, updateSignUI, applyMeter, applySettings};
+window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, currentAmt, updateSignUI, applyMeter, applySettings, switchView, get currentView(){return currentView;}};
 </script>
 </body>
 </html>
