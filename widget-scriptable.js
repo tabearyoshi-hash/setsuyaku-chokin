@@ -14,7 +14,10 @@
 // ウィジェットの設定でこのスクリプトを選びます。
 // 5. ウィジェットの表示を更新するには、アプリで再度
 // 「ウィジェット用ファイルを保存」を押してファイルを上書きします。
-// （ウィジェット自体は iOS が定期的に更新します）
+// ウィジェット自体は iOS が定期的に更新します（約30分後に更新してほしいと
+// refreshAfterDate でお願いしていますが、更新のタイミングを決めるのは iOS で、
+// 保証はされません）。ウィジェットをタップするとこのアプリが開くので、
+// そこから再度保存すれば最新の合計にできます。
 //
 //
 // 小サイズ：合計・目標までの残り（または達成／マイナス）・更新日時
@@ -129,6 +132,10 @@ function buildWidget(result, family) {
 const widget = new ListWidget()
 widget.backgroundColor = new Color('#ffffff')
 widget.setPadding(14, 14, 14, 14)
+// 約30分後の更新を iOS へお願いする（ヒントのみで、保証はされない）。
+// タップでアプリを開けるようにし、再保存への導線にする。
+widget.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000)
+widget.url = 'https://tabearyoshi-hash.github.io/setsuyaku-chokin/'
 
 const title = widget.addText('💰 節約貯金')
 title.font = Font.boldSystemFont(13)

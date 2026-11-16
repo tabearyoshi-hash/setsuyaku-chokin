@@ -129,15 +129,16 @@ small{color:#667}
 
 <section class="card">
   <b>あとで使う用</b>
-  <p><small>ウィジェット連携：Scriptable で合計をホーム画面に出せます。「ウィジェット用ファイルを保存」を押して、iCloud Drive の「Scriptable」フォルダへ setsuyaku-widget.json を保存してください。スクリプトは widget-scriptable.js を Scriptable に貼り付けます。詳しくは README をどうぞ。</small></p>
+  <p><small>ウィジェット連携：Scriptable で合計をホーム画面に出せます。「ウィジェット用ファイルを保存」を押して、iCloud Drive の「Scriptable」フォルダへ setsuyaku-widget.json を保存してください。スクリプトは widget-scriptable.js を Scriptable に貼り付けます。ウィジェットをタップするとこのアプリが開くので、再度保存すれば最新の合計になります。詳しくは README をどうぞ。</small></p>
   <div class="row"><button id="copyBtn" class="ghost" type="button">合計をコピー</button><button id="exportBtn" class="ghost" type="button">JSON書き出し</button></div>
   <div class="row" style="margin-top:8px"><button id="widgetBtn" class="ghost" type="button" style="width:100%">📱 ウィジェット用ファイルを保存</button></div>
+  <div id="widgetSavedAt" style="font-size:12px;color:#778;margin-top:6px">まだウィジェット用ファイルを保存していません</div>
   <label for="importBox">JSON読み込み（貼り付け）</label>
   <textarea id="importBox" rows="3" placeholder='{"goal":10000,"items":[...]}'></textarea>
   <button id="importBtn" class="ghost" type="button" style="width:100%;margin-top:8px">読み込む</button>
 </section>
 <nav id="tabbar"><button type="button" id="tabHome"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></span><span>ホーム</span></button><button type="button" id="tabAdd"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></span><span>追加</span></button><button type="button" id="tabSettings"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7.5h8M18 7.5h2M4 16.5h2M12 16.5h8"/><circle cx="15" cy="7.5" r="2.1"/><circle cx="9" cy="16.5" r="2.1"/></svg></span><span>設定</span></button></nav>
-<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.7 ・ アプリ更新日：2026-11-16</p>
+<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.8 ・ アプリ更新日：2026-11-17</p>
 
 <script>
 const KEY='setsuyaku_chokin_v1';
@@ -226,6 +227,18 @@ document.getElementById('exportBtn').onclick=async()=>{const s=summaryOf(); cons
 // ウィジェット用：Scriptable が読むコンパクトな JSON をファイルで保存する。
 // iOS Safari では a[download] が保存ダイアログを出し、保存先に iCloud Drive の
 // Scriptable フォルダを選ぶ。ダウンロードできない環境では JSON をコピーに fallback。
+// 最終保存日時は支出データとは別キーに保存し、画面に表示する。
+const WIDGET_EXPORT_KEY='setsuyaku-widget-exported-v1';
+function updateWidgetSavedAt(){
+  const el=document.getElementById('widgetSavedAt'); if(!el) return;
+  let ts=null;
+  try{const s=localStorage.getItem(WIDGET_EXPORT_KEY); if(s){const d=new Date(s); if(!isNaN(d.getTime())) ts=d.getTime();}}catch(e){}
+  el.textContent=ts?('最終保存：'+fmtDate(ts)):'まだウィジェット用ファイルを保存していません';
+}
+function markWidgetExported(){
+  try{localStorage.setItem(WIDGET_EXPORT_KEY,new Date().toISOString());}catch(e){}
+  updateWidgetSavedAt();
+}
 function widgetData(){const s=summaryOf(); return {version:1, kind:'setsuyaku-widget', updatedAt:new Date().toISOString(), total:s.total, today:s.today, month:s.month, plus:s.plus, minus:s.minus, goal:s.goal};}
 document.getElementById('widgetBtn').onclick=async()=>{
   const t=JSON.stringify(widgetData());
@@ -235,10 +248,11 @@ document.getElementById('widgetBtn').onclick=async()=>{
     const a=document.createElement('a'); a.href=url; a.download='setsuyaku-widget.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(()=>URL.revokeObjectURL(url),1000);
+    markWidgetExported();
     showMsg('ウィジェット用ファイルを保存しました。保存先は iCloud Drive の「Scriptable」フォルダを選んでください',true);
   }catch(e){
-    try{await navigator.clipboard.writeText(t); showMsg('保存ができなかったため JSON をコピーしました。ファイルに貼り付けて保存してください',true);}
-    catch(e2){document.getElementById('importBox').value=t; showMsg('下の欄にウィジェット用JSONを表示しました',true);}
+    try{await navigator.clipboard.writeText(t); markWidgetExported(); showMsg('保存ができなかったため JSON をコピーしました。ファイルに貼り付けて保存してください',true);}
+    catch(e2){document.getElementById('importBox').value=t; markWidgetExported(); showMsg('下の欄にウィジェット用JSONを表示しました',true);}
   }
 };
 document.getElementById('importBtn').onclick=()=>{try{const p=JSON.parse(document.getElementById('importBox').value); if(!p||!Array.isArray(p.items)) throw 0; const items=p.items.filter(i=>i&&typeof i.amount==='number'&&isFinite(i.amount)).map(i=>{let ts=(typeof i.ts==='number'&&isFinite(i.ts)&&i.ts>0)?i.ts:(i.date?dateToTs(i.date):Date.now()); return {id:i.id||(ts+'-'+Math.random().toString(16).slice(2)), amount:Math.round(i.amount), memo:String(i.memo||''), category:String(i.category||''), ts:ts};}); state={goal:Number(p.goal)||(p.summary&&Number(p.summary.goal))||10000, items:items, meter:(p.meter==='bar'?'bar':'donut')}; const ok=storageSave(); render(); showMsg(ok?'読み込みました':'読み込みました（保存はできませんでした）',ok);}catch(e){showMsg('JSONの形が違います',false);}};
@@ -261,9 +275,9 @@ document.getElementById('undoBtn').onclick=()=>{if(!lastAddedId){document.getEle
 document.getElementById('dateToday').onclick=()=>{document.getElementById('dateInput').value=toDateStr(new Date());};
 document.getElementById('dateYday').onclick=()=>{const d=new Date(); d.setDate(d.getDate()-1); document.getElementById('dateInput').value=toDateStr(d);};
 document.getElementById('memo').addEventListener('keydown',e=>{if(e.key==='Enter'){document.getElementById('addBtn').click();}});
-storageLoad(); document.getElementById('dateInput').value=toDateStr(new Date()); buildPad(); buildCatChips(); buildSettings(); applySettings(); updateSignUI(); render(); switchView(state.startTab==='add'?'add':'home');
+storageLoad(); document.getElementById('dateInput').value=toDateStr(new Date()); buildPad(); buildCatChips(); buildSettings(); applySettings(); updateSignUI(); render(); updateWidgetSavedAt(); switchView(state.startTab==='add'?'add':'home');
 // expose for local verification
-window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, currentAmt, updateSignUI, applyMeter, applySettings, switchView, widgetData, get currentView(){return currentView;}};
+window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, currentAmt, updateSignUI, applyMeter, applySettings, switchView, widgetData, updateWidgetSavedAt, widgetExportKey: WIDGET_EXPORT_KEY, get currentView(){return currentView;}};
 </script>
 </body>
 </html>
