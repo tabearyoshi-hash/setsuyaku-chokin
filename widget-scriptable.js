@@ -22,6 +22,9 @@
 //
 // 小サイズ：合計・目標までの残り（または達成／マイナス）・更新日時
 // 中サイズ：小サイズの内容 ＋ 今日・今月・＋合計・－合計・進み具合バー
+// 最終保存から1日以上たっていると、小／中どちらにも
+// 「⚠ ○日以上前のデータです」の警告が出ます（古い合計だと気づかずに
+// 見てしまうのを防ぐため）。
 //
 //
 // アプリの書き出す setsuyaku-widget.json を読みます。
@@ -74,6 +77,25 @@ const d = new Date(updatedAt)
 if (isNaN(d.getTime())) return ''
 const mm = String(d.getMinutes()).padStart(2, '0')
 return '更新 ' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + mm
+}
+
+// 最終保存からの経過日数。updatedAt がない／読めないときは null。
+// nowMs を渡せるのは検証用で、実機では Date.now() が使われる。
+function staleDays(updatedAt, nowMs) {
+if (!updatedAt) return null
+const d = new Date(updatedAt)
+if (isNaN(d.getTime())) return null
+const now = typeof nowMs === 'number'? nowMs: Date.now()
+const ageMs = now - d.getTime()
+if (ageMs < 0) return 0
+return Math.floor(ageMs / (24 * 60 * 60 * 1000))
+}
+
+// 1日以上たっていたら警告文、そうでなければ ''。
+function staleText(updatedAt, nowMs) {
+const days = staleDays(updatedAt, nowMs)
+if (days === null || days < 1) return ''
+return '⚠ ' + days + '日以上前のデータです'
 }
 
 // ---------- データの読み込み・正規化 ----------
@@ -169,6 +191,14 @@ total.minimumScaleFactor = 0.6
 const prog = widget.addText(progressText(d.total, d.goal))
 prog.font = Font.systemFont(13)
 prog.textColor = new Color(negative? '#c0392b': '#1c2a22')
+
+// 古いデータだと分かるように、1日以上たっていたら警告を出す（小／中共通）。
+const stale = staleText(d.updatedAt)
+if (stale) {
+const s = widget.addText(stale)
+s.font = Font.systemFont(12)
+s.textColor = new Color('#b45309')
+}
 
 if (family!== 'small') {
 widget.addSpacer(6)
