@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-512.png">
 <meta name="apple-mobile-web-app-title" content="節約貯金">
-<title>節約貯金 v0.10</title>
+<title>節約貯金 v0.11</title>
 <style>
 *{box-sizing:border-box;touch-action:manipulation}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f6f7f4;color:#1c2a22}
 header{padding:20px 16px 8px}h1{margin:0;font-size:22px} .sub{color:#5b6b60;font-size:13px;margin-top:4px}
@@ -64,7 +64,7 @@ small{color:#667}
 </style>
 </head>
 <body>
-<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.10）</div></header>
+<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.11）</div></header>
 <div id="storageBanner">⚠️ 保存できません。この画面を閉じると記録が消えます（Safariで開き直してください）</div>
 <div id="msg" class="msg"></div>
 
@@ -90,6 +90,7 @@ small{color:#667}
     <div class="stat">＋ 合計<b id="plusTotal">¥0</b></div>
     <div class="stat">－ 合計<b id="minusTotal">¥0</b></div>
   </div>
+  <div id="catBreakdown" style="margin-top:12px"></div>
 </section>
 
 <section class="card">
@@ -138,7 +139,7 @@ small{color:#667}
   <button id="importBtn" class="ghost" type="button" style="width:100%;margin-top:8px">読み込む</button>
 </section>
 <nav id="tabbar"><button type="button" id="tabHome"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></span><span>ホーム</span></button><button type="button" id="tabAdd"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></span><span>追加</span></button><button type="button" id="tabSettings"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7.5h8M18 7.5h2M4 16.5h2M12 16.5h8"/><circle cx="15" cy="7.5" r="2.1"/><circle cx="9" cy="16.5" r="2.1"/></svg></span><span>設定</span></button></nav>
-<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.10 ・ アプリ更新日：2026-11-19</p>
+<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.11 ・ アプリ更新日：2026-11-20</p>
 
 <script>
 const KEY='setsuyaku_chokin_v1';
@@ -155,6 +156,22 @@ function dateToTs(ds){if(!ds) return Date.now(); const p=ds.split('-').map(Numbe
 function toDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function summaryOf(){const now=new Date(); const isT=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();}; const isM=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}; return {total:state.items.reduce((a,i)=>a+i.amount,0), today:state.items.filter(i=>isT(i.ts)).reduce((a,i)=>a+i.amount,0), month:state.items.filter(i=>isM(i.ts)).reduce((a,i)=>a+i.amount,0), plus:state.items.filter(i=>i.amount>0).reduce((a,i)=>a+i.amount,0), minus:state.items.filter(i=>i.amount<0).reduce((a,i)=>a+i.amount,0), goal:Number(state.goal)||0};}
 function stateMessage(total,goal){if(goal>0&&total>=goal) return '目標達成！よく頑張りました！'; if(total<0) return '大丈夫、ここからがリスタートです！'; return '無理せずマイペースにいこう';}
+// 今月のカテゴリ別内訳：カテゴリごとに ＋合計・－合計・差し引きを集計し、
+// 差し引きの大きい順に並べる。カテゴリ未選択の記録は「カテゴリなし」にまとめる。
+// 先月の記録は含めない。表示だけの集計で、保存データの形は変えない。
+function categoryBreakdown(){
+  const now=new Date();
+  const map={};
+  state.items.forEach(i=>{
+    const d=new Date(i.ts);
+    if(d.getFullYear()!==now.getFullYear()||d.getMonth()!==now.getMonth()) return;
+    const cat=i.category||'カテゴリなし';
+    if(!map[cat]) map[cat]={category:cat,plus:0,minus:0,total:0};
+    if(i.amount>0) map[cat].plus+=i.amount; else if(i.amount<0) map[cat].minus+=i.amount;
+    map[cat].total+=i.amount;
+  });
+  return Object.values(map).sort((a,b)=>b.total-a.total);
+}
 function fmtDate(ts){const d=new Date(ts); return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function render(){
   const total=state.items.reduce((a,i)=>a+i.amount,0);
@@ -175,6 +192,19 @@ function render(){
   document.getElementById('plusTotal').textContent=yen(state.items.filter(i=>i.amount>0).reduce((a,i)=>a+i.amount,0));
   document.getElementById('minusTotal').textContent=yen(Math.abs(state.items.filter(i=>i.amount<0).reduce((a,i)=>a+i.amount,0)));
   document.getElementById('stateMsg').textContent=stateMessage(total,goal);
+  const cb=document.getElementById('catBreakdown'); cb.innerHTML='';
+  const bd=categoryBreakdown();
+  if(bd.length){
+    const h=document.createElement('div'); h.style.fontSize='13px'; h.style.color='#5b6b60'; h.style.marginBottom='2px'; h.textContent='今月のカテゴリ別'; cb.appendChild(h);
+    bd.forEach(r=>{
+      const row=document.createElement('div'); row.className='item';
+      const left=document.createElement('div'); left.textContent=r.category;
+      const right=document.createElement('div'); right.style.textAlign='right';
+      const net=document.createElement('div'); net.className='amt '+(r.total>=0?'p':'m'); net.textContent=(r.total>=0?'+':'')+yen(r.total);
+      const sub=document.createElement('div'); sub.className='meta'; sub.textContent='＋'+yen(r.plus)+' ／ －'+yen(Math.abs(r.minus));
+      right.appendChild(net); right.appendChild(sub); row.appendChild(left); row.appendChild(right); cb.appendChild(row);
+    });
+  }
   const list=document.getElementById('list'); list.innerHTML='';
   const sorted=[...state.items].sort((a,b)=>b.ts-a.ts);
   document.getElementById('empty').style.display=sorted.length?'none':'block';
@@ -261,7 +291,7 @@ async function exportWidgetFile(){
 document.getElementById('widgetBtn').onclick=()=>exportWidgetFile();
 document.getElementById('importBtn').onclick=()=>{try{const p=JSON.parse(document.getElementById('importBox').value); if(!p||!Array.isArray(p.items)) throw 0; const items=p.items.filter(i=>i&&typeof i.amount==='number'&&isFinite(i.amount)).map(i=>{let ts=(typeof i.ts==='number'&&isFinite(i.ts)&&i.ts>0)?i.ts:(i.date?dateToTs(i.date):Date.now()); return {id:i.id||(ts+'-'+Math.random().toString(16).slice(2)), amount:Math.round(i.amount), memo:String(i.memo||''), category:String(i.category||''), ts:ts};}); state={goal:Number(p.goal)||(p.summary&&Number(p.summary.goal))||10000, items:items, meter:(p.meter==='bar'?'bar':'donut')}; const ok=storageSave(); render(); showMsg(ok?'読み込みました':'読み込みました（保存はできませんでした）',ok);}catch(e){showMsg('JSONの形が違います',false);}};
 const THEMES=[['green','みどり'],['blue','あお'],['purple','むらさき'],['orange','オレンジ']];
-function applySettings(){document.body.dataset.theme=state.theme||'green'; document.getElementById('stateMsg').style.display=state.showMsg===false?'none':'block'; document.getElementById('statsGrid').style.display=state.showStats===false?'none':'grid';}
+function applySettings(){document.body.dataset.theme=state.theme||'green'; document.getElementById('stateMsg').style.display=state.showMsg===false?'none':'block'; document.getElementById('statsGrid').style.display=state.showStats===false?'none':'grid'; document.getElementById('catBreakdown').style.display=state.showStats===false?'none':'block';}
 function buildSettings(){const tc=document.getElementById('themeChips'); tc.innerHTML=''; THEMES.forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.theme||'green')===k?' on':''); b.textContent=label; b.onclick=()=>{state.theme=k; storageSave(); applySettings(); buildSettings();}; tc.appendChild(b);});
  const pc=document.getElementById('padChips'); pc.innerHTML=''; [['standard','標準（10〜5,000）'],['large','大きめ（100〜50,000）']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.padset||'standard')===k?' on':''); b.textContent=label; b.onclick=()=>{state.padset=k; storageSave(); buildPad(); buildSettings();}; pc.appendChild(b);});
  const sc=document.getElementById('startChips'); sc.innerHTML=''; [['home','ホーム'],['add','追加']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.startTab||'home')===k?' on':''); b.textContent=label; b.onclick=()=>{state.startTab=k; storageSave(); buildSettings();}; sc.appendChild(b);});
@@ -294,7 +324,7 @@ if(widgetFromLink){
   showMsg('ウィジェットから開きました。「📱 ウィジェット用ファイルを保存」をタップすると最新の合計を保存できます',true);
 }
 // expose for local verification
-window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, currentAmt, updateSignUI, applyMeter, applySettings, switchView, widgetData, updateWidgetSavedAt, exportWidgetFile, widgetExportKey: WIDGET_EXPORT_KEY, get currentView(){return currentView;}};
+window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, categoryBreakdown, currentAmt, updateSignUI, applyMeter, applySettings, switchView, widgetData, updateWidgetSavedAt, exportWidgetFile, widgetExportKey: WIDGET_EXPORT_KEY, get currentView(){return currentView;}};
 </script>
 </body>
 </html>
