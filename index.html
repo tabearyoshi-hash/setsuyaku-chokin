@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-512.png">
 <meta name="apple-mobile-web-app-title" content="節約貯金">
-<title>節約貯金 v0.13</title>
+<title>節約貯金 v0.14</title>
 <style>
 *{box-sizing:border-box;touch-action:manipulation}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f6f7f4;color:#1c2a22}
 header{padding:20px 16px 8px}h1{margin:0;font-size:22px} .sub{color:#5b6b60;font-size:13px;margin-top:4px}
@@ -64,7 +64,7 @@ small{color:#667}
 </style>
 </head>
 <body>
-<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.13）</div></header>
+<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.14）</div></header>
 <div id="storageBanner">⚠️ 保存できません。この画面を閉じると記録が消えます（Safariで開き直してください）</div>
 <div id="msg" class="msg"></div>
 
@@ -85,9 +85,15 @@ small{color:#667}
     </svg>
   </div>
   <div id="goalText" style="font-size:13px;color:#5b6b60;margin-top:6px"></div>
-  <div class="stats" id="statsGrid" style="margin-top:14px">
+  <div id="monthSwitch" style="display:flex;gap:8px;align-items:center;margin-top:14px">
+    <button type="button" id="monthPrev" class="ghost" style="flex:0 0 72px;padding:8px 4px;font-size:14px">‹ 前月</button>
+    <b id="monthLabel" style="flex:1;text-align:center;font-size:14px"></b>
+    <button type="button" id="monthNext" class="ghost" style="flex:0 0 72px;padding:8px 4px;font-size:14px">翌月 ›</button>
+  </div>
+  <div style="text-align:center"><button type="button" id="monthNow" class="ghost" style="display:none;font-size:13px;padding:6px 12px;margin-top:6px">今月に戻る</button></div>
+  <div class="stats" id="statsGrid" style="margin-top:10px">
     <div class="stat">今日<b id="todayTotal">¥0</b></div>
-    <div class="stat">今月<b id="monthTotal">¥0</b></div>
+    <div class="stat"><span id="monthStatLabel">今月</span><b id="monthTotal">¥0</b></div>
     <div class="stat">＋ 合計<b id="plusTotal">¥0</b></div>
     <div class="stat">－ 合計<b id="minusTotal">¥0</b></div>
   </div>
@@ -140,7 +146,7 @@ small{color:#667}
   <button id="importBtn" class="ghost" type="button" style="width:100%;margin-top:8px">読み込む</button>
 </section>
 <nav id="tabbar"><button type="button" id="tabHome"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></span><span>ホーム</span></button><button type="button" id="tabAdd"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></span><span>追加</span></button><button type="button" id="tabSettings"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7.5h8M18 7.5h2M4 16.5h2M12 16.5h8"/><circle cx="15" cy="7.5" r="2.1"/><circle cx="9" cy="16.5" r="2.1"/></svg></span><span>設定</span></button></nav>
-<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.13 ・ アプリ更新日：2026-11-22</p>
+<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.14 ・ アプリ更新日：2026-11-23</p>
 
 <script>
 const KEY='setsuyaku_chokin_v1';
@@ -179,13 +185,15 @@ function streakDays(items, nowMs){
 }
 // 今月のカテゴリ別内訳：カテゴリごとに ＋合計・－合計・差し引きを集計し、
 // 差し引きの大きい順に並べる。カテゴリ未選択の記録は「カテゴリなし」にまとめる。
-// 先月の記録は含めない。表示だけの集計で、保存データの形は変えない。
-function categoryBreakdown(){
+// 引数なしなら今月、(年, 月(0〜11)) を渡せばその月の内訳。対象月以外の記録は含めない。
+// 表示だけの集計で、保存データの形は変えない。
+function categoryBreakdown(y, m){
   const now=new Date();
+  const ty=(y==null?now.getFullYear():y), tm=(m==null?now.getMonth():m);
   const map={};
   state.items.forEach(i=>{
     const d=new Date(i.ts);
-    if(d.getFullYear()!==now.getFullYear()||d.getMonth()!==now.getMonth()) return;
+    if(d.getFullYear()!==ty||d.getMonth()!==tm) return;
     const cat=i.category||'カテゴリなし';
     if(!map[cat]) map[cat]={category:cat,plus:0,minus:0,total:0};
     if(i.amount>0) map[cat].plus+=i.amount; else if(i.amount<0) map[cat].minus+=i.amount;
@@ -193,6 +201,22 @@ function categoryBreakdown(){
   });
   return Object.values(map).sort((a,b)=>b.total-a.total);
 }
+// 表示中の月（内訳・カテゴリ別が見る月）。起動時は今月。
+// 保存しない表示だけの状態で、開き直すと今月に戻る。
+let viewMonth=(()=>{const n=new Date(); return {y:n.getFullYear(), m:n.getMonth()};})();
+function isCurrentViewMonth(){const n=new Date(); return viewMonth.y===n.getFullYear()&&viewMonth.m===n.getMonth();}
+// 見出し用の短い月表示：今月は「今月」、過去の月は「2026年10月」の形。
+function monthShortLabel(vm){return (vm.y===new Date().getFullYear()&&vm.m===new Date().getMonth())?'今月':(vm.y+'年'+(vm.m+1)+'月');}
+// 月を1つずらす。未来の月には進めない（今月で止まる）。過去への制限はない。
+function shiftViewMonth(delta){
+  let y=viewMonth.y, m=viewMonth.m+delta;
+  while(m<0){m+=12; y--;} while(m>11){m-=12; y++;}
+  const n=new Date();
+  if(y>n.getFullYear()||(y===n.getFullYear()&&m>n.getMonth())){ y=n.getFullYear(); m=n.getMonth(); }
+  viewMonth={y:y, m:m};
+  render();
+}
+function monthTotalFor(vm){return state.items.filter(i=>{const d=new Date(i.ts); return d.getFullYear()===vm.y&&d.getMonth()===vm.m;}).reduce((a,i)=>a+i.amount,0);}
 function fmtDate(ts){const d=new Date(ts); return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function render(){
   const total=state.items.reduce((a,i)=>a+i.amount,0);
@@ -207,18 +231,21 @@ function render(){
   applyMeter();
   document.getElementById('goalText').textContent=goal>0?('目標 '+yen(goal)+' まで あと '+yen(Math.max(0,goal-total))+'（'+(signedPct>0?'+':'')+signedPct+'%）'):'目標を設定すると進み具合が出ます';
   const now=new Date(); const isToday=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();};
-  const isMonth=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();};
   document.getElementById('todayTotal').textContent=yen(state.items.filter(i=>isToday(i.ts)).reduce((a,i)=>a+i.amount,0));
-  document.getElementById('monthTotal').textContent=yen(state.items.filter(i=>isMonth(i.ts)).reduce((a,i)=>a+i.amount,0));
+  document.getElementById('monthStatLabel').textContent=monthShortLabel(viewMonth);
+  document.getElementById('monthTotal').textContent=yen(monthTotalFor(viewMonth));
+  document.getElementById('monthLabel').textContent=viewMonth.y+'年'+(viewMonth.m+1)+'月';
+  document.getElementById('monthNext').disabled=isCurrentViewMonth();
+  document.getElementById('monthNow').style.display=isCurrentViewMonth()?'none':'inline-block';
   document.getElementById('plusTotal').textContent=yen(state.items.filter(i=>i.amount>0).reduce((a,i)=>a+i.amount,0));
   document.getElementById('minusTotal').textContent=yen(Math.abs(state.items.filter(i=>i.amount<0).reduce((a,i)=>a+i.amount,0)));
   document.getElementById('stateMsg').textContent=stateMessage(total,goal);
   const streak=streakDays(state.items, Date.now());
   document.getElementById('streakLine').textContent=streak>0?('🔥 連続記録 '+streak+'日目'):'';
   const cb=document.getElementById('catBreakdown'); cb.innerHTML='';
-  const bd=categoryBreakdown();
+  const bd=categoryBreakdown(viewMonth.y, viewMonth.m);
   if(bd.length){
-    const h=document.createElement('div'); h.style.fontSize='13px'; h.style.color='#5b6b60'; h.style.marginBottom='2px'; h.textContent='今月のカテゴリ別'; cb.appendChild(h);
+    const h=document.createElement('div'); h.style.fontSize='13px'; h.style.color='#5b6b60'; h.style.marginBottom='2px'; h.textContent=monthShortLabel(viewMonth)+'のカテゴリ別'; cb.appendChild(h);
     bd.forEach(r=>{
       const row=document.createElement('div'); row.className='item';
       const left=document.createElement('div'); left.textContent=r.category;
@@ -328,6 +355,10 @@ document.getElementById('tabSettings').onclick=()=>switchView('settings');
 function applyMeter(){const m=state.meter==='bar'?'bar':'donut'; document.getElementById('barWrap').style.display=m==='bar'?'block':'none'; document.getElementById('donutWrap').style.display=m==='donut'?'block':'none'; document.getElementById('meterBarBtn').className=m==='bar'?'on':''; document.getElementById('meterDonutBtn').className=m==='donut'?'on':'';}
 document.getElementById('meterBarBtn').onclick=()=>{state.meter='bar'; storageSave(); applyMeter();};
 document.getElementById('meterDonutBtn').onclick=()=>{state.meter='donut'; storageSave(); applyMeter();};
+// 月切り替え（内訳・カテゴリ別の表示月）。「翌月」は今月では押せない。
+document.getElementById('monthPrev').onclick=()=>shiftViewMonth(-1);
+document.getElementById('monthNext').onclick=()=>shiftViewMonth(1);
+document.getElementById('monthNow').onclick=()=>{const n=new Date(); viewMonth={y:n.getFullYear(), m:n.getMonth()}; render();};
 document.getElementById('undoBtn').onclick=()=>{if(!lastAddedId){document.getElementById('undoBtn').style.display='none'; return;} const before=state.items.length; state.items=state.items.filter(x=>x.id!==lastAddedId); lastAddedId=null; document.getElementById('undoBtn').style.display='none'; const ok=storageSave(); render(); showMsg(before!==state.items.length?(ok?'さっきの記録を取り消しました':'取り消しました（保存はできませんでした）'):'取り消す記録がありませんでした',ok);};
 document.getElementById('dateToday').onclick=()=>{document.getElementById('dateInput').value=toDateStr(new Date());};
 document.getElementById('dateYday').onclick=()=>{const d=new Date(); d.setDate(d.getDate()-1); document.getElementById('dateInput').value=toDateStr(d);};
@@ -347,7 +378,7 @@ if(widgetFromLink){
   showMsg('ウィジェットから開きました。「📱 ウィジェット用ファイルを保存」をタップすると最新の合計を保存できます',true);
 }
 // expose for local verification
-window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, streakDays, categoryBreakdown, currentAmt, updateSignUI, applyMeter, applySettings, switchView, widgetData, updateWidgetSavedAt, exportWidgetFile, widgetExportKey: WIDGET_EXPORT_KEY, get currentView(){return currentView;}};
+window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, streakDays, categoryBreakdown, currentAmt, updateSignUI, applyMeter, applySettings, switchView, widgetData, updateWidgetSavedAt, exportWidgetFile, widgetExportKey: WIDGET_EXPORT_KEY, get currentView(){return currentView;}, get viewMonth(){return viewMonth;}, shiftViewMonth, monthShortLabel, monthTotalFor};
 </script>
 </body>
 </html>
