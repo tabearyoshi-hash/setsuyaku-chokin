@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<meta name="apple-mobile-web-app-title" content="節約貯金">
+<title>節約貯金 v0.16</title>
+<style>
+*{box-sizing:border-box;touch-action:manipulation}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f6f7f4;color:#1c2a22}
+header{padding:20px 16px 8px}h1{margin:0;font-size:22px} .sub{color:#5b6b60;font-size:13px;margin-top:4px}
+.card{background:#fff;border:1px solid #e2e7e0;border-radius:16px;padding:16px;margin:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.balance{font-size:38px;font-weight:800;margin:6px 0} .balance.plus{color:var(--main)}.balance.minus{color:#c0392b}
+.bar{height:10px;background:#e8ece8;border-radius:99px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--accent);width:0%}
+.meterswitch{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
+.meterswitch button{padding:6px 12px;font-size:13px;background:#eef1ee;color:#445;border-radius:99px}
+.meterswitch button.on{background:var(--main);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+button{border:0;border-radius:12px;padding:12px;font-size:16px;font-weight:700;cursor:pointer}
+.seg{display:flex;background:#eef1ee;border-radius:12px;padding:4px}.seg button{flex:1;background:transparent;color:#445}.seg button.on-plus{background:#22a35a;color:#fff}.seg button.on-minus{background:#e05252;color:#fff}
+input,textarea{width:100%;padding:12px;border:1px solid #cfd8cf;border-radius:12px;font-size:17px;background:#fff}
+label{font-size:13px;color:#5b6b60;display:block;margin:10px 0 6px}
+.chip{flex:0 0 auto;padding:8px 12px;font-size:14px;background:#eef6f0;color:var(--main);border:1px solid #cfe6d6}
+.chip.neg{background:#fdf0f0;color:#b03a2e;border-color:#f0cccc}
+.primary{background:var(--main);color:#fff;width:100%;margin-top:12px}
+.ghost{background:#eef1ee;color:#223}
+.msg{margin:12px 16px;padding:10px 12px;border-radius:12px;font-size:14px;display:none}.msg.show{display:block}.msg.ok{background:#e6f6ec;color:#0f5a2e}.msg.warn{background:#fff3cd;color:#664d03}
+#storageBanner{display:none;margin:12px 16px;padding:10px 12px;border-radius:12px;background:#fdecec;color:#7a1f1f;font-size:14px}
+.item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #eef1ee}.item:last-child{border-bottom:0}
+.amt{font-weight:800;white-space:nowrap}.amt.p{color:var(--main)}.amt.m{color:#c0392b}
+.meta{font-size:12px;color:#778}.del{background:#f3f3f3;padding:6px 10px;font-size:13px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#f7faf7;border-radius:12px;padding:10px}.stat b{font-size:18px;display:block}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.pad button{padding:14px 8px;font-size:17px;background:#eef6f0;color:#0f7a3d;border:1px solid #cfe6d6}
+.pad button.sub{background:#fdf0f0;color:#b03a2e;border-color:#f0cccc}
+.pad button.clear{background:#eef1ee;color:#223;border-color:#dde3dd}
+#amount{font-size:22px;font-weight:700}#amount.pos{color:var(--main)}#amount.neg{color:#c0392b}
+#signHint{font-size:13px;margin-top:6px;min-height:18px}#signHint.pos{color:var(--main)}#signHint.neg{color:#c0392b}
+.catchips{display:flex;gap:8px;flex-wrap:wrap}
+.catchip{padding:9px 13px;font-size:14px;background:#fff;color:#33463a;border:1px solid #cfd8cf;border-radius:99px;font-weight:600}
+.catchip.on{background:var(--main);color:#fff;border-color:var(--main)}
+.memochip{flex:0 0 auto;padding:7px 11px;font-size:13px;background:#f4f6f4;color:#33463a;border:1px solid #e0e6e0}
+.datequick{display:flex;gap:8px;margin-top:8px}.datequick button{flex:1;padding:9px;font-size:14px}
+#undoBtn{display:none;width:100%;margin-top:8px;background:#fff3cd;color:#664d03}
+:root{--main:#0f7a3d;--accent:#22a35a}
+body[data-theme="blue"]{--main:#1565c0;--accent:#42a5f5}
+body[data-theme="purple"]{--main:#6a3ec9;--accent:#9b72f0}
+body[data-theme="orange"]{--main:#c2570f;--accent:#f08c2e}
+#tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-top:1px solid #e6e8e3;box-shadow:0 -2px 14px rgba(30,50,35,.05);padding:6px 10px calc(6px + env(safe-area-inset-bottom));z-index:50}
+#tabbar button{flex:1;background:none;border:none;box-shadow:none;display:flex;flex-direction:column;align-items:center;gap:2px;color:#9aa39c;font-size:10px;font-weight:500;padding:5px 0 2px;border-radius:0}
+#tabbar button.on{background:none;color:var(--main);font-weight:700}
+#tabbar button .tic{display:block;line-height:0}
+#tabbar button .tic svg{width:24px;height:24px;display:block}
+body{padding-bottom:96px}
+#barPct{font-size:13px;font-weight:800;margin-top:6px;text-align:right}
+#donutArc{transform-box:fill-box;transform-origin:center;transform:rotate(-90deg)}
+.setrow{margin-top:14px}.setlabel{font-size:13px;color:#5b6b60;margin-bottom:6px}
+.optchips{display:flex;gap:8px;flex-wrap:wrap}
+.optchip{padding:9px 13px;font-size:14px;background:#fff;color:#33463a;border:1px solid #cfd8cf;border-radius:99px;font-weight:600}
+.optchip.on{background:var(--main);color:#fff;border-color:var(--main)}
+small{color:#667}
+</style>
+</head>
+<body>
+<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.16）</div></header>
+<div id="storageBanner">⚠️ 保存できません。この画面を閉じると記録が消えます（Safariで開き直してください）</div>
+<div id="msg" class="msg"></div>
+
+<section class="card">
+  <div style="font-size:13px;color:#5b6b60">いまの節約貯金</div>
+  <div id="balance" class="balance plus">¥0</div>
+  <div id="stateMsg" style="font-size:14px;color:var(--main);margin:2px 0 6px"></div>
+  <div id="streakLine" style="font-size:14px;color:#b45309;margin:2px 0 6px"></div>
+  <div class="row" style="align-items:center"><div><label for="goalInput">目標（円）</label><input id="goalInput" inputmode="numeric" value="10000"></div><div style="flex:0 0 96px;padding-top:22px"><button id="goalSave" class="ghost">目標を保存</button></div></div>
+  <div class="meterswitch"><button type="button" id="meterDonutBtn">円グラフ</button><button type="button" id="meterBarBtn">バー</button></div>
+  <div id="barWrap"><div class="bar" style="margin-top:8px"><i id="barFill"></i></div><div id="barPct"></div></div>
+  <div id="donutWrap" style="display:none;text-align:center;padding-top:4px">
+    <svg width="136" height="136" viewBox="0 0 120 120" role="img" aria-label="貯金度メーター">
+      <circle cx="60" cy="60" r="52" fill="none" stroke="#e8ece8" stroke-width="12"></circle>
+      <circle id="donutArc" cx="60" cy="60" r="52" fill="none" stroke="#22a35a" stroke-width="12" stroke-linecap="round"></circle>
+      <text id="donutPct" x="60" y="59" text-anchor="middle" font-size="21" font-weight="800" fill="#1c2a22">0%</text>
+      <text id="donutSub" x="60" y="77" text-anchor="middle" font-size="9.5" fill="#667">目標まで</text>
+    </svg>
+  </div>
+  <div id="goalText" style="font-size:13px;color:#5b6b60;margin-top:6px"></div>
+  <div id="monthSwitch" style="display:flex;gap:8px;align-items:center;margin-top:14px">
+    <button type="button" id="monthPrev" class="ghost" style="flex:0 0 72px;padding:8px 4px;font-size:14px">‹ 前月</button>
+    <b id="monthLabel" style="flex:1;text-align:center;font-size:14px"></b>
+    <button type="button" id="monthNext" class="ghost" style="flex:0 0 72px;padding:8px 4px;font-size:14px">翌月 ›</button>
+  </div>
+  <div style="text-align:center"><button type="button" id="monthNow" class="ghost" style="display:none;font-size:13px;padding:6px 12px;margin-top:6px">今月に戻る</button></div>
+  <div class="stats" id="statsGrid" style="margin-top:10px">
+    <div class="stat">今日<b id="todayTotal">¥0</b></div>
+    <div class="stat"><span id="monthStatLabel">今月</span><b id="monthTotal">¥0</b><div id="monthDiff" style="font-size:12px;margin-top:2px"></div></div>
+    <div class="stat">＋ 合計<b id="plusTotal">¥0</b></div>
+    <div class="stat">－ 合計<b id="minusTotal">¥0</b></div>
+  </div>
+  <div id="catBreakdown" style="margin-top:12px"></div>
+</section>
+
+<section class="card">
+  <label for="amount">金額（円）</label>
+  <input id="amount" inputmode="numeric" placeholder="例：500（－500 と打つと贅沢・無駄遣い）" autocomplete="off">
+  <div id="signHint"></div>
+  <div class="pad" id="pad"></div>
+  <div style="font-size:12px;color:#778;margin-top:6px">電卓式：＋ボタンで貯金、−ボタンで贅沢・無駄遣い。押すたびに足し引きされます。＋/－の切り替えは不要です</div>
+  <label for="memo">メモ（任意）</label>
+  <input id="memo" placeholder="例：コンビニスイーツを我慢 / 外食で贅沢" autocomplete="off">
+  <div class="row" style="margin-top:8px;gap:6px" id="memoChips"></div>
+  <label>カテゴリ（任意）</label>
+  <div class="catchips" id="catChips"></div>
+  <div><label for="dateInput">日付</label><input id="dateInput" type="date">
+  <div class="datequick"><button type="button" id="dateToday" class="ghost">今日</button><button type="button" id="dateYday" class="ghost">昨日</button></div></div>
+  <div id="editNote" style="display:none;font-size:13px;color:#664d03;margin-top:10px">編集中です。内容を直して「更新する」を押してください。</div>
+  <button id="addBtn" class="primary" type="button">記録する</button>
+  <button id="undoBtn" type="button">↩ さっきの記録を取り消す</button>
+  <button id="cancelEdit" class="ghost" type="button" style="display:none;width:100%;margin-top:8px">編集をやめる</button>
+</section>
+
+<section class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center"><b>履歴</b><small id="count"></small></div>
+  <div id="list"></div>
+  <div id="empty" style="color:#778;padding:14px 0">まだ記録がありません。最初の「我慢できた」を入れてみてください。</div>
+</section>
+
+<section class="card">
+  <b>設定</b>
+  <div class="setrow"><div class="setlabel">テーマカラー</div><div class="optchips" id="themeChips"></div></div>
+  <div class="setrow"><div class="setlabel">金額パッドの金額</div><div class="optchips" id="padChips"></div></div>
+  <div class="setrow"><div class="setlabel">表示するもの（タップでON／OFF）</div><div class="optchips" id="dispChips"></div></div>
+  <div class="setrow"><div class="setlabel">カテゴリ別の月予算（その月の贅沢・無駄遣いの上限。空欄は上限なし）</div><div id="budgetInputs"></div></div>
+  <div class="setrow"><div class="setlabel">起動時に開くタブ</div><div class="optchips" id="startChips"></div></div>
+  <div class="setrow"><div class="setlabel">記録したあと</div><div class="optchips" id="afterChips"></div></div>
+  <p><small>設定はこの端末に保存されます。メーター（円グラフ／バー）の切り替えは、残高カードの右上にあります。</small></p>
+</section>
+
+<section class="card">
+  <b>あとで使う用</b>
+  <p><small>ウィジェット連携：Scriptable で合計をホーム画面に出せます。初回だけ iPhone の「設定 → Safari → ダウンロード」で保存先を iCloud Drive の「Scriptable」フォルダにしておくと、その後の保存がそのフォルダへ直接行きます。「ウィジェット用ファイルを保存」を押して setsuyaku-widget.json を保存してください。スクリプトは widget-scriptable.js を Scriptable に貼り付けます。ウィジェットをタップするとこのアプリがウィジェット欄で開くので、光っている保存ボタンをタップすれば最新の合計になります。詳しくは README をどうぞ。</small></p>
+  <div class="row"><button id="copyBtn" class="ghost" type="button">合計をコピー</button><button id="exportBtn" class="ghost" type="button">JSON書き出し</button></div>
+  <div class="row" style="margin-top:8px"><button id="widgetBtn" class="ghost" type="button" style="width:100%">📱 ウィジェット用ファイルを保存</button></div>
+  <div id="widgetSavedAt" style="font-size:12px;color:#778;margin-top:6px">まだウィジェット用ファイルを保存していません</div>
+  <label for="importBox">JSON読み込み（貼り付け）</label>
+  <textarea id="importBox" rows="3" placeholder='{"goal":10000,"items":[...]}'></textarea>
+  <button id="importBtn" class="ghost" type="button" style="width:100%;margin-top:8px">読み込む</button>
+</section>
+<nav id="tabbar"><button type="button" id="tabHome"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></span><span>ホーム</span></button><button type="button" id="tabAdd"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></span><span>追加</span></button><button type="button" id="tabSettings"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7.5h8M18 7.5h2M4 16.5h2M12 16.5h8"/><circle cx="15" cy="7.5" r="2.1"/><circle cx="9" cy="16.5" r="2.1"/></svg></span><span>設定</span></button></nav>
+<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.16 ・ アプリ更新日：2026-11-25</p>
+
+<script>
+const KEY='setsuyaku_chokin_v1';
+let state={goal:10000,items:[]};
+let storageOK=true; let editingId=null; let selectedCategory=''; let lastAddedId=null;
+const CATEGORIES=['食費・飲み物','娯楽','交際費','交通費','文房具','その他'];
+function storageLoad(){try{const s=localStorage.getItem(KEY); if(s){const p=JSON.parse(s); if(p&&Array.isArray(p.items)) state=p;} storageOK=true;}catch(e){storageOK=false;} updateBanner();}
+function storageSave(){try{localStorage.setItem(KEY,JSON.stringify(state)); storageOK=true; updateBanner(); return true;}catch(e){storageOK=false; updateBanner(); return false;}}
+function updateBanner(){document.getElementById('storageBanner').style.display=storageOK?'none':'block';}
+function showMsg(t,ok){const m=document.getElementById('msg'); m.textContent=t; m.className='msg show '+(ok?'ok':'warn'); setTimeout(()=>{m.className='msg';},3500);}
+function yen(n){const s=n<0?'-':''; return s+'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP');}
+function parseAmount(v){if(!v) return NaN; const c=String(v).replace(/[，,円￥¥\s]/g,'').replace(/[－―]/g,'-').replace(/[０-９]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0)); const n=Number(c); return isNaN(n)?NaN:Math.round(n);}
+function dateToTs(ds){if(!ds) return Date.now(); const p=ds.split('-').map(Number); if(p.length!==3||p.some(isNaN)) return Date.now(); const now=new Date(); const isTodayStr=ds===toDateStr(now); if(isTodayStr) return Date.now(); return new Date(p[0],p[1]-1,p[2],12,0,0).getTime();}
+function toDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function summaryOf(){const now=new Date(); const isT=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();}; const isM=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();}; return {total:state.items.reduce((a,i)=>a+i.amount,0), today:state.items.filter(i=>isT(i.ts)).reduce((a,i)=>a+i.amount,0), month:state.items.filter(i=>isM(i.ts)).reduce((a,i)=>a+i.amount,0), plus:state.items.filter(i=>i.amount>0).reduce((a,i)=>a+i.amount,0), minus:state.items.filter(i=>i.amount<0).reduce((a,i)=>a+i.amount,0), goal:Number(state.goal)||0};}
+function stateMessage(total,goal){if(goal>0&&total>=goal) return '目標達成！よく頑張りました！'; if(total<0) return '大丈夫、ここからがリスタートです！'; return '無理せずマイペースにいこう';}
+// 連続記録日数（ストリーク）：記録がある日が今日から何日連続しているか。
+// 今日まだ記録がなくても、昨日まで続いていれば昨日の分まで数える。
+// 記録が1件もない、または最後の記録が一昨日以前なら 0。
+// 同じ日の複数記録は1日分、未来の日付の記録は数えない。表示だけの集計で、保存データの形は変えない。
+function streakDays(items, nowMs){
+  const now=new Date(nowMs==null?Date.now():nowMs);
+  const dayKey=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+  const days=new Set();
+  (items||[]).forEach(i=>{
+    const d=new Date(i.ts);
+    if(isNaN(d.getTime())||d.getTime()>now.getTime()) return;
+    days.add(dayKey(d));
+  });
+  if(!days.size) return 0;
+  const cursor=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  if(!days.has(dayKey(cursor))) cursor.setDate(cursor.getDate()-1);
+  let n=0;
+  while(days.has(dayKey(cursor))){ n++; cursor.setDate(cursor.getDate()-1); }
+  return n;
+}
+// 今月のカテゴリ別内訳：カテゴリごとに ＋合計・－合計・差し引きを集計し、
+// 差し引きの大きい順に並べる。カテゴリ未選択の記録は「カテゴリなし」にまとめる。
+// 引数なしなら今月、(年, 月(0〜11)) を渡せばその月の内訳。対象月以外の記録は含めない。
+// 表示だけの集計で、保存データの形は変えない。
+function categoryBreakdown(y, m){
+  const now=new Date();
+  const ty=(y==null?now.getFullYear():y), tm=(m==null?now.getMonth():m);
+  const map={};
+  state.items.forEach(i=>{
+    const d=new Date(i.ts);
+    if(d.getFullYear()!==ty||d.getMonth()!==tm) return;
+    const cat=i.category||'カテゴリなし';
+    if(!map[cat]) map[cat]={category:cat,plus:0,minus:0,total:0};
+    if(i.amount>0) map[cat].plus+=i.amount; else if(i.amount<0) map[cat].minus+=i.amount;
+    map[cat].total+=i.amount;
+  });
+  return Object.values(map).sort((a,b)=>b.total-a.total);
+}
+// 表示中の月（内訳・カテゴリ別が見る月）。起動時は今月。
+// 保存しない表示だけの状態で、開き直すと今月に戻る。
+let viewMonth=(()=>{const n=new Date(); return {y:n.getFullYear(), m:n.getMonth()};})();
+function isCurrentViewMonth(){const n=new Date(); return viewMonth.y===n.getFullYear()&&viewMonth.m===n.getMonth();}
+// 見出し用の短い月表示：今月は「今月」、過去の月は「2026年10月」の形。
+function monthShortLabel(vm){return (vm.y===new Date().getFullYear()&&vm.m===new Date().getMonth())?'今月':(vm.y+'年'+(vm.m+1)+'月');}
+// 月を1つずらす。未来の月には進めない（今月で止まる）。過去への制限はない。
+function shiftViewMonth(delta){
+  let y=viewMonth.y, m=viewMonth.m+delta;
+  while(m<0){m+=12; y--;} while(m>11){m-=12; y++;}
+  const n=new Date();
+  if(y>n.getFullYear()||(y===n.getFullYear()&&m>n.getMonth())){ y=n.getFullYear(); m=n.getMonth(); }
+  viewMonth={y:y, m:m};
+  render();
+}
+function monthTotalFor(vm){return state.items.filter(i=>{const d=new Date(i.ts); return d.getFullYear()===vm.y&&d.getMonth()===vm.m;}).reduce((a,i)=>a+i.amount,0);}
+// 表示中の月とその前の月の合計の差（先月比）。表示だけの集計で、保存データの形は変えない。
+// プラスなら「前の月より多く貯められた」、マイナスなら「前の月より少ない」。
+// 前の月は1月なら前年の12月になる。
+function prevMonthOf(vm){
+  let y=vm.y, m=vm.m-1;
+  if(m<0){m=11; y--;}
+  return {y:y, m:m};
+}
+function monthDiff(vm){
+  const cur=monthTotalFor(vm);
+  const prev=monthTotalFor(prevMonthOf(vm));
+  return {diff:cur-prev, cur:cur, prev:prev};
+}
+// カテゴリ別の月予算：その月の贅沢・無駄遣い（－の合計の絶対値）に対する上限。
+// budget が正の数でなければ上限なし（null を返す）。表示だけの集計で、保存データの形は変えない。
+// 予算は設定として state.budgets に保存され、JSON書き出し／読み込みでも引き継がれる。
+// 「カテゴリなし」の記録には予算は付かない（6つのカテゴリだけが対象）。
+function budgetStatus(minusAbs, budget){
+  const b=Number(budget);
+  if(!(b>0)) return null;
+  const used=Math.max(0, Math.round(Number(minusAbs)||0));
+  return {budget:b, used:used, remaining:b-used, over:used>b};
+}
+function fmtDate(ts){const d=new Date(ts); return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function render(){
+  const total=state.items.reduce((a,i)=>a+i.amount,0);
+  const b=document.getElementById('balance'); b.textContent=yen(total); b.className='balance '+(total<0?'minus':'plus');
+  const goal=Number(state.goal)||0; document.getElementById('goalInput').value=goal||'';
+  const rawPct=goal>0?total/goal*100:0; const pct=Math.max(0,Math.min(100,rawPct)); const signedPct=Math.trunc(rawPct);
+  const bf=document.getElementById('barFill'); bf.style.width=Math.min(100,Math.abs(rawPct))+'%'; bf.style.background=total<0?'#e05252':'';
+  const bp=document.getElementById('barPct'); bp.textContent=goal>0?((signedPct>0?'+':'')+signedPct+'%'):''; bp.style.color=total<0?'#c0392b':'var(--main)';
+  const CIRC=326.73; const arc=document.getElementById('donutArc'); arc.style.strokeDasharray=CIRC; arc.style.strokeDashoffset=CIRC*(1-Math.min(100,Math.abs(rawPct))/100); arc.style.stroke=total<0?'#e05252':'var(--accent)'; arc.style.transform=total<0?'scaleX(-1) rotate(-90deg)':'rotate(-90deg)';
+  const dp=document.getElementById('donutPct'); dp.textContent=goal>0?((signedPct>0?'+':'')+signedPct+'%'):'—'; dp.style.fill=total<0?'#c0392b':'#1c2a22';
+  document.getElementById('donutSub').textContent=goal<=0?'目標未設定':(total>=goal?'目標達成！':'あと '+yen(Math.max(0,goal-total)));
+  applyMeter();
+  document.getElementById('goalText').textContent=goal>0?('目標 '+yen(goal)+' まで あと '+yen(Math.max(0,goal-total))+'（'+(signedPct>0?'+':'')+signedPct+'%）'):'目標を設定すると進み具合が出ます';
+  const now=new Date(); const isToday=t=>{const d=new Date(t);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();};
+  document.getElementById('todayTotal').textContent=yen(state.items.filter(i=>isToday(i.ts)).reduce((a,i)=>a+i.amount,0));
+  document.getElementById('monthStatLabel').textContent=monthShortLabel(viewMonth);
+  document.getElementById('monthTotal').textContent=yen(monthTotalFor(viewMonth));
+  const md=monthDiff(viewMonth);
+  const mde=document.getElementById('monthDiff');
+  if(md.cur===0&&md.prev===0){ mde.textContent=''; }
+  else if(md.diff>0){ mde.textContent='前の月より +'+yen(md.diff); mde.style.color='var(--main)'; }
+  else if(md.diff<0){ mde.textContent='前の月より -'+yen(Math.abs(md.diff)); mde.style.color='#c0392b'; }
+  else { mde.textContent='前の月と同じ'; mde.style.color='#5b6b60'; }
+  document.getElementById('monthLabel').textContent=viewMonth.y+'年'+(viewMonth.m+1)+'月';
+  document.getElementById('monthNext').disabled=isCurrentViewMonth();
+  document.getElementById('monthNow').style.display=isCurrentViewMonth()?'none':'inline-block';
+  document.getElementById('plusTotal').textContent=yen(state.items.filter(i=>i.amount>0).reduce((a,i)=>a+i.amount,0));
+  document.getElementById('minusTotal').textContent=yen(Math.abs(state.items.filter(i=>i.amount<0).reduce((a,i)=>a+i.amount,0)));
+  document.getElementById('stateMsg').textContent=stateMessage(total,goal);
+  const streak=streakDays(state.items, Date.now());
+  document.getElementById('streakLine').textContent=streak>0?('🔥 連続記録 '+streak+'日目'):'';
+  const cb=document.getElementById('catBreakdown'); cb.innerHTML='';
+  const bd=categoryBreakdown(viewMonth.y, viewMonth.m);
+  if(bd.length){
+    const h=document.createElement('div'); h.style.fontSize='13px'; h.style.color='#5b6b60'; h.style.marginBottom='2px'; h.textContent=monthShortLabel(viewMonth)+'のカテゴリ別'; cb.appendChild(h);
+    bd.forEach(r=>{
+      const row=document.createElement('div'); row.className='item';
+      const left=document.createElement('div'); left.textContent=r.category;
+      const right=document.createElement('div'); right.style.textAlign='right';
+      const net=document.createElement('div'); net.className='amt '+(r.total>=0?'p':'m'); net.textContent=(r.total>=0?'+':'')+yen(r.total);
+      const sub=document.createElement('div'); sub.className='meta'; sub.textContent='＋'+yen(r.plus)+' ／ －'+yen(Math.abs(r.minus));
+      right.appendChild(net); right.appendChild(sub);
+      const bs=budgetStatus(Math.abs(r.minus), CATEGORIES.includes(r.category)&&(state.budgets?state.budgets[r.category]:undefined));
+      if(bs){
+        const bl=document.createElement('div'); bl.className='meta';
+        if(bs.over){ bl.textContent='予算オーバー '+yen(bs.used-bs.budget); bl.style.color='#c0392b'; }
+        else { bl.textContent='予算 '+yen(bs.budget)+'・あと '+yen(bs.remaining); bl.style.color='#5b6b60'; }
+        right.appendChild(bl);
+      }
+      row.appendChild(left); row.appendChild(right); cb.appendChild(row);
+    });
+  }
+  const list=document.getElementById('list'); list.innerHTML='';
+  const sorted=[...state.items].sort((a,b)=>b.ts-a.ts);
+  document.getElementById('empty').style.display=sorted.length?'none':'block';
+  document.getElementById('count').textContent=sorted.length?sorted.length+'件':'';
+  sorted.forEach(it=>{
+    const div=document.createElement('div'); div.className='item';
+    const left=document.createElement('div');
+    const title=document.createElement('div'); title.textContent=it.memo||(it.amount>=0?'節約・我慢':'贅沢・無駄遣い');
+    const meta=document.createElement('div'); meta.className='meta'; meta.textContent=fmtDate(it.ts)+(it.category?' ・ '+it.category:'');
+    left.appendChild(title); left.appendChild(meta);
+    const right=document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+    const amt=document.createElement('span'); amt.className='amt '+(it.amount>=0?'p':'m'); amt.textContent=(it.amount>=0?'+':'')+yen(it.amount).replace('-¥','-¥');
+    // yen already includes sign for negative; for positive add +
+    amt.textContent=it.amount>=0?('+'+yen(it.amount)):yen(it.amount);
+    const del=document.createElement('button'); del.className='del'; del.textContent='削除'; del.onclick=()=>{state.items=state.items.filter(x=>x.id!==it.id); if(editingId===it.id) cancelEdit(); const ok=storageSave(); render(); showMsg(ok?'削除しました':'削除しました（保存はできませんでした）',ok);};
+    const edit=document.createElement('button'); edit.className='del'; edit.textContent='編集'; edit.onclick=()=>{startEdit(it);};
+    right.appendChild(amt); right.appendChild(edit); right.appendChild(del); div.appendChild(left); div.appendChild(right); list.appendChild(div);
+  });
+  buildMemoChips();
+}
+function startEdit(it){editingId=it.id; document.getElementById('amount').value=(it.amount<0?'-':'')+Math.abs(it.amount).toLocaleString('ja-JP'); updateSignUI(); document.getElementById('memo').value=it.memo||''; selectedCategory=it.category||''; buildCatChips(); document.getElementById('dateInput').value=toDateStr(new Date(it.ts)); document.getElementById('editNote').style.display='block'; document.getElementById('cancelEdit').style.display='block'; document.getElementById('addBtn').textContent='更新する'; switchView('add'); showMsg('編集中：内容を直して「更新する」を押してください',true);}
+function cancelEdit(){editingId=null; document.getElementById('editNote').style.display='none'; document.getElementById('cancelEdit').style.display='none'; document.getElementById('amount').value=''; document.getElementById('memo').value=''; selectedCategory=''; buildCatChips(); document.getElementById('dateInput').value=toDateStr(new Date()); updateSignUI();}
+function currentAmt(){const v=parseAmount(document.getElementById('amount').value); return isNaN(v)?0:v;}
+function setAmt(n){const el=document.getElementById('amount'); el.value=n===0?'':(n<0?'-':'')+Math.abs(n).toLocaleString('ja-JP'); updateSignUI();}
+function updateSignUI(){const n=currentAmt(); const el=document.getElementById('amount'); el.className=n<0?'neg':(n>0?'pos':''); const h=document.getElementById('signHint'); h.className=n<0?'neg':(n>0?'pos':''); h.textContent=n>0?'＋ 節約・我慢として記録されます':(n<0?'－ 贅沢・無駄遣いとして記録されます':'金額を入れると、＋か－かが自動で決まります'); const b=document.getElementById('addBtn'); if(editingId){b.style.background=n<0?'#c0392b':'var(--main)';} else {b.textContent=n<0?'－ で記録する（贅沢・無駄遣い）':'＋ で記録する（節約・我慢）'; b.style.background=n<0?'#c0392b':'var(--main)';}}
+function buildPad(){const c=document.getElementById('pad'); c.innerHTML=''; (state.padset==='large'?[100,500,1000,5000,10000,50000]:[10,50,100,500,1000,5000]).forEach(v=>{const b=document.createElement('button'); b.type='button'; b.textContent='+'+v.toLocaleString('ja-JP'); b.onclick=()=>{setAmt(currentAmt()+v);}; c.appendChild(b);}); (state.padset==='large'?[100,500,1000,5000]:[10,50,100,500]).forEach(v=>{const b=document.createElement('button'); b.type='button'; b.className='sub'; b.textContent='−'+v.toLocaleString('ja-JP'); b.onclick=()=>{setAmt(currentAmt()-v);}; c.appendChild(b);}); const cl=document.createElement('button'); cl.type='button'; cl.className='clear'; cl.textContent='クリア'; cl.onclick=()=>{setAmt(0);}; c.appendChild(cl); const bk=document.createElement('button'); bk.type='button'; bk.className='clear'; bk.textContent='1桁消す'; bk.onclick=()=>{setAmt(Math.trunc(currentAmt()/10));}; c.appendChild(bk);}
+function buildCatChips(){const c=document.getElementById('catChips'); c.innerHTML=''; [''].concat(CATEGORIES).forEach(v=>{const b=document.createElement('button'); b.type='button'; b.className='catchip'+(selectedCategory===v?' on':''); b.textContent=v||'未選択'; b.onclick=()=>{selectedCategory=v; buildCatChips();}; c.appendChild(b);});}
+function buildMemoChips(){const c=document.getElementById('memoChips'); if(!c) return; c.innerHTML=''; const seen=new Set(); const items=[...state.items].sort((a,b)=>b.ts-a.ts); for(const it of items){if(it.memo&&!seen.has(it.memo)){seen.add(it.memo); const b=document.createElement('button'); b.type='button'; b.className='memochip'; b.textContent=it.memo; b.onclick=()=>{document.getElementById('memo').value=it.memo; if(it.category){selectedCategory=it.category; buildCatChips();}}; c.appendChild(b); if(seen.size>=5) break;}}}
+document.getElementById('amount').addEventListener('input',()=>updateSignUI());
+document.getElementById('addBtn').onclick=()=>{
+  const raw=document.getElementById('amount').value; const v=parseAmount(raw);
+  if(!raw||isNaN(v)||v===0){showMsg('金額を入れてください（＋でも－でも、0以外）',false); return;}
+  const signed=v;
+  const memo=document.getElementById('memo').value.trim();
+  const category=selectedCategory;
+  const ts=dateToTs(document.getElementById('dateInput').value);
+  if(editingId){const it=state.items.find(x=>x.id===editingId); if(it){it.amount=signed; it.memo=memo; it.category=category; it.ts=ts;} const ok=storageSave(); cancelEdit(); render(); showMsg(ok?'更新しました':'更新しました（保存はできませんでした）',ok); return;}
+  const newId=Date.now()+'-'+Math.random().toString(16).slice(2);
+  state.items.push({id:newId, amount:signed, memo:memo, category:category, ts:ts});
+  const ok=storageSave(); render();
+  lastAddedId=newId; document.getElementById('undoBtn').style.display='block';
+  document.getElementById('amount').value=''; document.getElementById('memo').value=''; updateSignUI();
+  showMsg(ok?('記録しました： '+(signed>=0?'+':'')+yen(signed)):'記録しました（保存はできませんでした。閉じると消えます）',ok);
+  if(state.afterAdd==='home') switchView('home');
+};
+document.getElementById('cancelEdit').onclick=()=>{cancelEdit(); render();};
+document.getElementById('goalSave').onclick=()=>{const v=parseAmount(document.getElementById('goalInput').value); if(isNaN(v)||v<0){showMsg('目標は0以上の数字で入れてください',false); return;} state.goal=v; const ok=storageSave(); render(); showMsg(ok?'目標を保存しました':'目標を変更しました（保存はできませんでした）',ok);};
+document.getElementById('copyBtn').onclick=async()=>{const total=state.items.reduce((a,i)=>a+i.amount,0); const t='節約貯金 合計 '+yen(total)+'（目標 '+yen(Number(state.goal)||0)+'）'; try{await navigator.clipboard.writeText(t); showMsg('コピーしました：'+t,true);}catch(e){showMsg(t,true);}};
+document.getElementById('exportBtn').onclick=async()=>{const s=summaryOf(); const out={version:1, updatedAt:new Date().toISOString(), summary:{total:s.total,today:s.today,month:s.month,plus:s.plus,minus:s.minus,goal:s.goal}, goal:s.goal, budgets:(state.budgets||{}), items:state.items.map(i=>({id:i.id,date:toDateStr(new Date(i.ts)),ts:i.ts,amount:Math.round(i.amount),memo:i.memo||'',category:i.category||''}))}; const t=JSON.stringify(out,null,2); try{await navigator.clipboard.writeText(t); showMsg('JSONをコピーしました（ウィジェット用要約つき）',true);}catch(e){document.getElementById('importBox').value=t; showMsg('下の欄にJSONを表示しました',true);}};
+// ウィジェット用：Scriptable が読むコンパクトな JSON をファイルで保存する。
+// iOS Safari では a[download] が保存ダイアログを出し、保存先に iCloud Drive の
+// Scriptable フォルダを選ぶ。ダウンロードできない環境では JSON をコピーに fallback。
+// 最終保存日時は支出データとは別キーに保存し、画面に表示する。
+const WIDGET_EXPORT_KEY='setsuyaku-widget-exported-v1';
+function updateWidgetSavedAt(){
+  const el=document.getElementById('widgetSavedAt'); if(!el) return;
+  let ts=null;
+  try{const s=localStorage.getItem(WIDGET_EXPORT_KEY); if(s){const d=new Date(s); if(!isNaN(d.getTime())) ts=d.getTime();}}catch(e){}
+  el.textContent=ts?('最終保存：'+fmtDate(ts)):'まだウィジェット用ファイルを保存していません';
+}
+function markWidgetExported(){
+  try{localStorage.setItem(WIDGET_EXPORT_KEY,new Date().toISOString());}catch(e){}
+  updateWidgetSavedAt();
+}
+function widgetData(){const s=summaryOf(); return {version:1, kind:'setsuyaku-widget', updatedAt:new Date().toISOString(), total:s.total, today:s.today, month:s.month, plus:s.plus, minus:s.minus, goal:s.goal};}
+// ウィジェット用ファイルの保存。iOS Safari はダウンロード確認ダイアログで
+// ユーザーが「ダウンロード」を押してから blob を読むため、URL の破棄は
+// 60 秒後に延ばす（1 秒で破棄すると、押す前に URL が死んで何も起きない）。
+async function exportWidgetFile(){
+  const t=JSON.stringify(widgetData());
+  try{
+    const blob=new Blob([t],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='setsuyaku-widget.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    markWidgetExported();
+    showMsg('ウィジェット用ファイルを保存しました。保存先は iCloud Drive の「Scriptable」フォルダを選んでください',true);
+  }catch(e){
+    try{await navigator.clipboard.writeText(t); markWidgetExported(); showMsg('保存ができなかったため JSON をコピーしました。ファイルに貼り付けて保存してください',true);}
+    catch(e2){document.getElementById('importBox').value=t; markWidgetExported(); showMsg('下の欄にウィジェット用JSONを表示しました',true);}
+  }
+}
+document.getElementById('widgetBtn').onclick=()=>exportWidgetFile();
+document.getElementById('importBtn').onclick=()=>{try{const p=JSON.parse(document.getElementById('importBox').value); if(!p||!Array.isArray(p.items)) throw 0; const items=p.items.filter(i=>i&&typeof i.amount==='number'&&isFinite(i.amount)).map(i=>{let ts=(typeof i.ts==='number'&&isFinite(i.ts)&&i.ts>0)?i.ts:(i.date?dateToTs(i.date):Date.now()); return {id:i.id||(ts+'-'+Math.random().toString(16).slice(2)), amount:Math.round(i.amount), memo:String(i.memo||''), category:String(i.category||''), ts:ts};}); const budgets={}; if(p.budgets&&typeof p.budgets==='object'){CATEGORIES.forEach(c=>{const v=Number(p.budgets[c]); if(v>0&&isFinite(v)) budgets[c]=Math.round(v);});} state={goal:Number(p.goal)||(p.summary&&Number(p.summary.goal))||10000, items:items, meter:(p.meter==='bar'?'bar':'donut'), budgets:budgets}; const ok=storageSave(); render(); showMsg(ok?'読み込みました':'読み込みました（保存はできませんでした）',ok);}catch(e){showMsg('JSONの形が違います',false);}};
+const THEMES=[['green','みどり'],['blue','あお'],['purple','むらさき'],['orange','オレンジ']];
+function applySettings(){document.body.dataset.theme=state.theme||'green'; document.getElementById('stateMsg').style.display=state.showMsg===false?'none':'block'; document.getElementById('streakLine').style.display=state.showStreak===false?'none':'block'; document.getElementById('statsGrid').style.display=state.showStats===false?'none':'grid'; document.getElementById('catBreakdown').style.display=state.showCatBreakdown===false?'none':'block';}
+function buildBudgetInputs(){
+  const c=document.getElementById('budgetInputs'); if(!c) return; c.innerHTML='';
+  CATEGORIES.forEach(cat=>{
+    const row=document.createElement('div'); row.style.display='flex'; row.style.gap='8px'; row.style.alignItems='center'; row.style.margin='4px 0';
+    const lab=document.createElement('span'); lab.style.flex='1'; lab.style.fontSize='14px'; lab.textContent=cat;
+    const inp=document.createElement('input'); inp.type='text'; inp.inputMode='numeric'; inp.placeholder='上限なし'; inp.style.width='120px'; inp.style.textAlign='right';
+    const cur=state.budgets?state.budgets[cat]:undefined;
+    inp.value=(typeof cur==='number'&&cur>0)?String(cur):'';
+    // 入力欄の change（フォーカスが外れたとき）で保存する。入力のたびに作り直すと
+    // フォーカスが外れてしまうため、input イベントでは保存しない。
+    inp.addEventListener('change',()=>{
+      const v=parseAmount(inp.value);
+      if(!state.budgets) state.budgets={};
+      if(isNaN(v)||v<=0){ delete state.budgets[cat]; inp.value=''; }
+      else { state.budgets[cat]=v; inp.value=String(v); }
+      const ok=storageSave(); render();
+      showMsg(ok?'月予算を保存しました':'月予算を変更しました（保存はできませんでした）',ok);
+    });
+    row.appendChild(lab); row.appendChild(inp); c.appendChild(row);
+  });
+}
+function buildSettings(){const tc=document.getElementById('themeChips'); tc.innerHTML=''; THEMES.forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.theme||'green')===k?' on':''); b.textContent=label; b.onclick=()=>{state.theme=k; storageSave(); applySettings(); buildSettings();}; tc.appendChild(b);});
+ const pc=document.getElementById('padChips'); pc.innerHTML=''; [['standard','標準（10〜5,000）'],['large','大きめ（100〜50,000）']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.padset||'standard')===k?' on':''); b.textContent=label; b.onclick=()=>{state.padset=k; storageSave(); buildPad(); buildSettings();}; pc.appendChild(b);});
+ const sc=document.getElementById('startChips'); sc.innerHTML=''; [['home','ホーム'],['add','追加']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.startTab||'home')===k?' on':''); b.textContent=label; b.onclick=()=>{state.startTab=k; storageSave(); buildSettings();}; sc.appendChild(b);});
+ const ac=document.getElementById('afterChips'); ac.innerHTML=''; [['stay','そのまま（続けて入力）'],['home','ホームへ戻る']].forEach(([k,label])=>{const b=document.createElement('button'); b.type='button'; b.className='optchip'+((state.afterAdd||'stay')===k?' on':''); b.textContent=label; b.onclick=()=>{state.afterAdd=k; storageSave(); buildSettings();}; ac.appendChild(b);});
+ const dc=document.getElementById('dispChips'); dc.innerHTML=''; [['showMsg','一言メッセージ'],['showStreak','連続記録日数'],['showStats','今日・今月などの内訳'],['showCatBreakdown','カテゴリ別内訳']].forEach(([k,label])=>{const on=state[k]!==false; const b=document.createElement('button'); b.type='button'; b.className='optchip'+(on?' on':''); b.textContent=label+(on?'：ON':'：OFF'); b.onclick=()=>{state[k]=state[k]===false?true:false; storageSave(); applySettings(); buildSettings();}; dc.appendChild(b);}); buildBudgetInputs();}
+let currentView='home';
+function switchView(v){currentView=v; const cards=document.querySelectorAll('section.card'); const map={home:[0,2],add:[1],settings:[3,4]}; cards.forEach((c,i)=>{c.style.display=(map[v]||[]).includes(i)?'block':'none';}); document.getElementById('tabHome').className=v==='home'?'on':''; document.getElementById('tabAdd').className=v==='add'?'on':''; document.getElementById('tabSettings').className=v==='settings'?'on':''; window.scrollTo(0,0);}
+document.getElementById('tabHome').onclick=()=>switchView('home');
+document.getElementById('tabAdd').onclick=()=>switchView('add');
+document.getElementById('tabSettings').onclick=()=>switchView('settings');
+function applyMeter(){const m=state.meter==='bar'?'bar':'donut'; document.getElementById('barWrap').style.display=m==='bar'?'block':'none'; document.getElementById('donutWrap').style.display=m==='donut'?'block':'none'; document.getElementById('meterBarBtn').className=m==='bar'?'on':''; document.getElementById('meterDonutBtn').className=m==='donut'?'on':'';}
+document.getElementById('meterBarBtn').onclick=()=>{state.meter='bar'; storageSave(); applyMeter();};
+document.getElementById('meterDonutBtn').onclick=()=>{state.meter='donut'; storageSave(); applyMeter();};
+// 月切り替え（内訳・カテゴリ別の表示月）。「翌月」は今月では押せない。
+document.getElementById('monthPrev').onclick=()=>shiftViewMonth(-1);
+document.getElementById('monthNext').onclick=()=>shiftViewMonth(1);
+document.getElementById('monthNow').onclick=()=>{const n=new Date(); viewMonth={y:n.getFullYear(), m:n.getMonth()}; render();};
+document.getElementById('undoBtn').onclick=()=>{if(!lastAddedId){document.getElementById('undoBtn').style.display='none'; return;} const before=state.items.length; state.items=state.items.filter(x=>x.id!==lastAddedId); lastAddedId=null; document.getElementById('undoBtn').style.display='none'; const ok=storageSave(); render(); showMsg(before!==state.items.length?(ok?'さっきの記録を取り消しました':'取り消しました（保存はできませんでした）'):'取り消す記録がありませんでした',ok);};
+document.getElementById('dateToday').onclick=()=>{document.getElementById('dateInput').value=toDateStr(new Date());};
+document.getElementById('dateYday').onclick=()=>{const d=new Date(); d.setDate(d.getDate()-1); document.getElementById('dateInput').value=toDateStr(d);};
+document.getElementById('memo').addEventListener('keydown',e=>{if(e.key==='Enter'){document.getElementById('addBtn').click();}});
+storageLoad(); document.getElementById('dateInput').value=toDateStr(new Date()); buildPad(); buildCatChips(); buildSettings(); applySettings(); updateSignUI(); render(); updateWidgetSavedAt(); switchView(state.startTab==='add'?'add':'home');
+// ウィジェットからの深いリンク（?widget=1）：設定タブのウィジェット欄を開き、
+// 保存ボタンを目立たせて「タップ1回で最新の合計を保存できる」状態にする。
+// iOS Safari はユーザー操作なしの JS によるダウンロード開始を許可しないため、
+// 開いただけで自動保存はせず、ボタンを押してもらう形にしている。
+let widgetFromLink=false;
+try{widgetFromLink=new URLSearchParams(location.search).get('widget')==='1';}catch(e){}
+if(widgetFromLink){
+  switchView('settings');
+  const wb=document.getElementById('widgetBtn');
+  wb.style.outline='3px solid #f59e0b'; wb.style.outlineOffset='2px';
+  if(wb.scrollIntoView) wb.scrollIntoView({block:'center'});
+  showMsg('ウィジェットから開きました。「📱 ウィジェット用ファイルを保存」をタップすると最新の合計を保存できます',true);
+}
+// expose for local verification
+window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, streakDays, categoryBreakdown, currentAmt, updateSignUI, applyMeter, applySettings, switchView, widgetData, updateWidgetSavedAt, exportWidgetFile, widgetExportKey: WIDGET_EXPORT_KEY, get currentView(){return currentView;}, get viewMonth(){return viewMonth;}, shiftViewMonth, monthShortLabel, monthTotalFor, monthDiff, prevMonthOf, budgetStatus};
+</script>
+</body>
+</html>
