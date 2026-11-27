@@ -7,7 +7,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-512.png">
 <meta name="apple-mobile-web-app-title" content="節約貯金">
-<title>節約貯金 v0.18</title>
+<title>節約貯金 v0.19</title>
 <style>
 *{box-sizing:border-box;touch-action:manipulation}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;background:#f6f7f4;color:#1c2a22}
 header{padding:20px 16px 8px}h1{margin:0;font-size:22px} .sub{color:#5b6b60;font-size:13px;margin-top:4px}
@@ -64,7 +64,7 @@ small{color:#667}
 </style>
 </head>
 <body>
-<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.18）</div></header>
+<header><h1>💰 節約貯金</h1><div class="sub">我慢できたら ＋、贅沢・無駄遣いしたら －。積み上がりを見るアプリです（v0.19）</div></header>
 <div id="storageBanner">⚠️ 保存できません。この画面を閉じると記録が消えます（Safariで開き直してください）</div>
 <div id="msg" class="msg"></div>
 
@@ -150,7 +150,7 @@ small{color:#667}
   <button id="importBtn" class="ghost" type="button" style="width:100%;margin-top:8px">読み込む</button>
 </section>
 <nav id="tabbar"><button type="button" id="tabHome"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></span><span>ホーム</span></button><button type="button" id="tabAdd"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></span><span>追加</span></button><button type="button" id="tabSettings"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7.5h8M18 7.5h2M4 16.5h2M12 16.5h8"/><circle cx="15" cy="7.5" r="2.1"/><circle cx="9" cy="16.5" r="2.1"/></svg></span><span>設定</span></button></nav>
-<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.18 ・ アプリ更新日：2026-11-27</p>
+<p style="text-align:center;color:#889;font-size:12px;padding:0 16px 24px">節約貯金 v0.19 ・ アプリ更新日：2026-11-28</p>
 
 <script>
 const KEY='setsuyaku_chokin_v1';
@@ -250,6 +250,25 @@ function budgetStatus(minusAbs, budget){
   const used=Math.max(0, Math.round(Number(minusAbs)||0));
   return {budget:b, used:used, remaining:b-used, over:used>b};
 }
+// カテゴリ別予算の合計：予算を付けたカテゴリだけを集計する。
+// 予算（合計）・そのカテゴリの支出（－の合計の絶対値）・残り・オーバーを返す。
+// 予算を付けたカテゴリが1つもなければ null（合計行は出さない）。
+// 予算のないカテゴリの支出や「カテゴリなし」の記録は含めない（予算と比べる対象が違うため）。
+// ちょうど予算ぴったりは残り0でオーバー扱いにしない（budgetStatus と同じ境界）。
+function budgetTotal(vm){
+  const bd=categoryBreakdown(vm.y, vm.m);
+  let budget=0, used=0, count=0;
+  CATEGORIES.forEach(cat=>{
+    const b=Number(state.budgets?state.budgets[cat]:undefined);
+    if(!(b>0)) return;
+    count++;
+    budget+=b;
+    const row=bd.find(r=>r.category===cat);
+    if(row) used+=Math.abs(row.minus);
+  });
+  if(!count) return null;
+  return {budget:budget, used:used, remaining:budget-used, over:used>budget, count:count};
+}
 // 履歴の検索・絞り込み：表示だけの絞り込みで、保存データの形は変えない。
 // query はメモとカテゴリの部分一致（前後の空白は無視、大小文字は区別しない）。
 // sign は 'all' | 'plus' | 'minus'。金額0の記録は＋／－のどちらにも入らない。
@@ -319,6 +338,15 @@ function render(){
       }
       row.appendChild(left); row.appendChild(right); cb.appendChild(row);
     });
+  }
+  // 予算の合計行：予算を付けたカテゴリの合計と、そのカテゴリの支出の合計を比べる。
+  // 記録がまだない月でも、予算を付けていれば「支出 0円・あと 予算全額」と出る。
+  const bt=budgetTotal(viewMonth);
+  if(bt){
+    const s=document.createElement('div'); s.style.fontSize='13px'; s.style.marginTop='6px';
+    if(bt.over){ s.textContent='予算合計 '+yen(bt.budget)+'・支出 '+yen(bt.used)+'・予算オーバー '+yen(bt.used-bt.budget); s.style.color='#c0392b'; }
+    else { s.textContent='予算合計 '+yen(bt.budget)+'・支出 '+yen(bt.used)+'・あと '+yen(bt.remaining); s.style.color='#5b6b60'; }
+    cb.appendChild(s);
   }
   const list=document.getElementById('list'); list.innerHTML='';
   const sorted=[...state.items].sort((a,b)=>b.ts-a.ts);
@@ -469,7 +497,7 @@ if(widgetFromLink){
   showMsg('ウィジェットから開きました。「📱 ウィジェット用ファイルを保存」をタップすると最新の合計を保存できます',true);
 }
 // expose for local verification
-window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, streakDays, categoryBreakdown, currentAmt, updateSignUI, applyMeter, applySettings, switchView, widgetData, updateWidgetSavedAt, exportWidgetFile, widgetExportKey: WIDGET_EXPORT_KEY, get currentView(){return currentView;}, get viewMonth(){return viewMonth;}, shiftViewMonth, monthShortLabel, monthTotalFor, monthDiff, prevMonthOf, monthRecordCount, budgetStatus, filterHistory, buildHistorySignChips, get historyQuery(){return historyQuery;}, set historyQuery(v){historyQuery=v;}, get historySign(){return historySign;}, set historySign(v){historySign=v;}};
+window.__setsuyaku={get state(){return state;}, get selectedCategory(){return selectedCategory;}, set selectedCategory(v){selectedCategory=v;}, parseAmount, yen, summaryOf, stateMessage, streakDays, categoryBreakdown, currentAmt, updateSignUI, applyMeter, applySettings, switchView, widgetData, updateWidgetSavedAt, exportWidgetFile, widgetExportKey: WIDGET_EXPORT_KEY, get currentView(){return currentView;}, get viewMonth(){return viewMonth;}, shiftViewMonth, monthShortLabel, monthTotalFor, monthDiff, prevMonthOf, monthRecordCount, budgetStatus, budgetTotal, filterHistory, buildHistorySignChips, get historyQuery(){return historyQuery;}, set historyQuery(v){historyQuery=v;}, get historySign(){return historySign;}, set historySign(v){historySign=v;}};
 </script>
 </body>
 </html>
